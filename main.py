@@ -57,7 +57,7 @@ def check_options(pieces, locations, turn):
         if piece == 'pawn':
             moves_list = check_pawn(location, turn, white_locations, black_locations)
         elif piece == 'rook':
-            moves_list = check_rook(locations, turn)
+            moves_list = check_rook(location, turn, white_locations, black_locations)
         '''elif piece == 'bishop':
             move_list = check_bishop(locations, turn)
         elif piece == 'knight':
