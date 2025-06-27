@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*.log
+
+# Virtual environment
+venv/
+
+# Pygame cache
+*.wav
+*.ogg
+*.db
+.DS_Store
