@@ -49,4 +49,8 @@ def draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_imag
         if turn_step > 1:
             if selection == i:
                 pygame.draw.rect(screen, 'red', [black_locations[i][0] * 100 + 1, black_locations[i][1] * 100 + 1, 100, 100], 3)
+
+def draw_valid(moves, turn_step, screen):
+    for i in range(len(moves)):
+        pygame.draw.circle(screen, 'red', (moves[i][0] * 100 + 50, moves[i][1] * 100 + 50), 5)
     

@@ -1,4 +1,13 @@
 import pygame
+def check_valid_moves(turn_step, white_options, black_options, selection):
+    if (turn_step < 2):
+        options_list = white_options
+    else :
+        options_list = black_options
+    
+    valid_options = options_list[selection]
+
+    return valid_options
 
 def check_pawn(position, color, white_locations, black_locations):
     moves_list = []
@@ -28,6 +37,9 @@ def check_pawn(position, color, white_locations, black_locations):
             moves_list.append((position[0] - 1, position[1] - 1))
 
     return moves_list
+
+def check_rook(position, color, white_locations, black_locations):
+    moves_list = []
 
     
 

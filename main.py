@@ -1,7 +1,6 @@
 import pygame
 from assets import *
-from CheckValidMoves import check_pawn
-
+from checkvalidmoves import *
 
 pygame.init()
 # Declaring global varables for board setup
@@ -51,22 +50,22 @@ def check_options(pieces, locations, turn):
     moves_list = []
     all_moves_list = []
 
-    for i in range(pieces):
+    for i in range(len(pieces)):
         location = locations[i]
         piece = pieces[i]
 
         if piece == 'pawn':
-            moves_list = check_pawn(locations, turn, white_locations, black_locations)
+            moves_list = check_pawn(location, turn, white_locations, black_locations)
         elif piece == 'rook':
             moves_list = check_rook(locations, turn)
-        elif piece == 'bishop':
+        '''elif piece == 'bishop':
             move_list = check_bishop(locations, turn)
         elif piece == 'knight':
             move_list = check_knight(locations, turn)
         elif piece == 'queen':
             move_list = check_queen(locations, turn)
         else:
-            move_list = check_king(locations, turn)
+            move_list = check_king(locations, turn)'''
 
         all_moves_list.append(moves_list)
 
@@ -83,6 +82,10 @@ while run:
     screen.fill((153, 80, 0))
     draw_board(screen, WIDTH, HEIGHT, turn_step, big_font, turn_prompt)
     draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection)
+
+    if selection != 100:
+        valid_moves = check_valid_moves(turn_step, white_options, black_options, selection)
+        draw_valid(valid_moves, turn_step, screen)
 
     #event handling for quitting the game
     for event in pygame.event.get():
