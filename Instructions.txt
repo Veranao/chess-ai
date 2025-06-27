@@ -1,0 +1,3 @@
+cd your-project-folder
+.\venv\Scripts\activate
+python main.py
