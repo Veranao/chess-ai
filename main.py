@@ -1,7 +1,7 @@
 import pygame
-from assets import load_pieces
-from assets import draw_board
-from assets import draw_pieces
+from assets import *
+from CheckValidMoves import check_pawn
+
 
 pygame.init()
 # Declaring global varables for board setup
@@ -48,7 +48,30 @@ load_pieces("w", white_images, small_white_images, piece_list)
 turn_prompt = ['White: Select a piece to move!', 'White: Select where to go!', 'Black: Select a piece to move!', 'Black: Select where to go!']
 
 def check_options(pieces, locations, turn):
-    pass
+    moves_list = []
+    all_moves_list = []
+
+    for i in range(pieces):
+        location = locations[i]
+        piece = pieces[i]
+
+        if piece == 'pawn':
+            moves_list = check_pawn(locations, turn, white_locations, black_locations)
+        elif piece == 'rook':
+            moves_list = check_rook(locations, turn)
+        elif piece == 'bishop':
+            move_list = check_bishop(locations, turn)
+        elif piece == 'knight':
+            move_list = check_knight(locations, turn)
+        elif piece == 'queen':
+            move_list = check_queen(locations, turn)
+        else:
+            move_list = check_king(locations, turn)
+
+        all_moves_list.append(moves_list)
+
+    return all_moves_list
+
     #Implement to check the move list of all the pieces in the game and their valid moves at a given state of the game (depending on what turn with one turn of look-ahead)
 
 black_options = check_options(black_pieces, black_locations, 'black')
