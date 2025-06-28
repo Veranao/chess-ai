@@ -82,6 +82,7 @@ while run:
     screen.fill((153, 80, 0))
     draw_board(screen, WIDTH, HEIGHT, turn_step, big_font, turn_prompt)
     draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection)
+    draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen)
 
     if selection != 100:
         valid_moves = check_valid_moves(turn_step, white_options, black_options, selection)

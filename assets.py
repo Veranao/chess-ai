@@ -8,7 +8,7 @@ def load_pieces(side, image_arr, image_arr_small, piece_list):
         piece = pygame.transform.scale(piece, (250, 250))
         image_arr.append(piece)
 
-        small_piece = pygame.transform.scale(piece, (20, 20))
+        small_piece = pygame.transform.scale(piece, (150, 150))
         image_arr_small.append(small_piece)
 
 def draw_board(screen, width, height, turn_step, big_font, turn_prompt):
@@ -53,4 +53,15 @@ def draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_imag
 def draw_valid(moves, turn_step, screen):
     for i in range(len(moves)):
         pygame.draw.circle(screen, 'red', (moves[i][0] * 100 + 50, moves[i][1] * 100 + 50), 5)
+
+def draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen):
     
+    for i in range(len(captured_white_pieces)):
+        captured_piece = captured_white_pieces[i]
+        index = piece_list.index(captured_piece)
+        screen.blit(small_black_images[index], (825, 5 + 50 * i))
+    
+    for i in range(len(captured_black_pieces)):
+        captured_piece = captured_black_pieces[i]
+        index = piece_list.index(captured_piece)
+        screen.blit(small_white_images[index], (925, 5 + 50 * i))
