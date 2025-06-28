@@ -11,6 +11,9 @@ font = pygame.font.Font(None, 24)
 big_font = pygame.font.Font(None, 48)
 timer = pygame.time.Clock()
 frames_per_second = 60
+counter = 0
+winner = ''
+game_over = False
 pygame.display.set_caption('Chess in Python')
 
 
@@ -71,7 +74,7 @@ def check_options(pieces, locations, turn):
 
     return all_moves_list
 
-    #Implement to check the move list of all the pieces in the game and their valid moves at a given state of the game (depending on what turn with one turn of look-ahead)
+#def restart_game(game_over):
 
 black_options = check_options(black_pieces, black_locations, 'black')
 white_options = check_options(white_pieces, white_locations, 'white')
@@ -80,9 +83,14 @@ run = True
 while run:
     timer.tick(frames_per_second)
     screen.fill((153, 80, 0))
+    if counter < 30:
+        counter += 1
+    else:
+        counter = 0
     draw_board(screen, WIDTH, HEIGHT, turn_step, big_font, turn_prompt)
     draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection)
     draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen)
+    draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter)
 
     if selection != 100:
         valid_moves = check_valid_moves(turn_step, white_options, black_options, selection)
@@ -106,6 +114,8 @@ while run:
                     if chess_coordinate in black_locations:
                         black_piece = black_locations.index(chess_coordinate)
                         captured_white_pieces.append(black_pieces[black_piece])
+                        if (black_pieces[black_piece] == 'king'):
+                            winner = 'White'
                         black_pieces.pop(black_piece)
                         black_locations.pop(black_piece)
                     black_options = check_options(black_pieces, black_locations, 'black')
@@ -124,6 +134,8 @@ while run:
                     if chess_coordinate in white_locations:
                         white_piece = white_locations.index(chess_coordinate)
                         captured_black_pieces.append(white_pieces[white_piece])
+                        if (white_pieces[white_piece] == 'king'):
+                            winner = 'Black'
                         white_pieces.pop(white_piece)
                         white_locations.pop(white_piece)
                     black_options = check_options(black_pieces, black_locations, 'black')
@@ -131,6 +143,31 @@ while run:
                     turn_step = 0
                     selection = 100
                     valid_moves = []
+        if event.type == pygame.KEYDOWN and game_over: 
+            if event.key == pygame.K_RETURN:
+                game_over = False
+                winner = ''
+                white_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook',
+                                'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
+                white_locations = [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0),
+                                (0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1)]
+                black_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook',
+                                'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
+                black_locations = [(0, 7), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7),
+                                (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6)]
+                captured_white_pieces = []
+                captured_black_pieces = []
+                turn_step = 0
+                selection = 100
+                valid_moves = []
+                black_options = check_options(black_pieces, black_locations, 'black')
+                white_options = check_options(white_pieces, white_locations, 'white')
+
+
+
+    if winner != '':
+        game_over = True
+        draw_game_over(screen, font, winner)
     
     pygame.display.flip()
 pygame.quit()
