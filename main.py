@@ -58,14 +58,14 @@ def check_options(pieces, locations, turn):
             moves_list = check_pawn(location, turn, white_locations, black_locations)
         elif piece == 'rook':
             moves_list = check_rook(location, turn, white_locations, black_locations)
-        '''elif piece == 'bishop':
-            move_list = check_bishop(locations, turn)
+        elif piece == 'bishop':
+            moves_list = check_bishop(location, turn, white_locations, black_locations)
         elif piece == 'knight':
-            move_list = check_knight(locations, turn)
+            moves_list = check_knight(location, turn, white_locations, black_locations)
         elif piece == 'queen':
-            move_list = check_queen(locations, turn)
+            moves_list = check_queen(location, turn, white_locations, black_locations)
         else:
-            move_list = check_king(locations, turn)'''
+            moves_list = check_king(location, turn, white_locations, black_locations)
 
         all_moves_list.append(moves_list)
 

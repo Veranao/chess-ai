@@ -63,6 +63,7 @@ def check_rook(position, color, white_locations, black_locations):
         else: 
             x = -1
             y = 0
+
         while path:
             if (position[0] + (chain_length * x), position[1] + (chain_length * y)) not in friendly_pieces and 0 <= position[0] + (chain_length * x) <= 7 and 0 <= position[1] + (chain_length * y) <= 7:
                 moves_list.append((position[0] + chain_length * x, position[1] + (chain_length * y)))
@@ -74,10 +75,84 @@ def check_rook(position, color, white_locations, black_locations):
 
     return moves_list
 
-#def check_bishop(locations, turn):
+def check_bishop(position, color, white_locations, black_locations):
+    moves_list = []
 
-#def check_knight(locations, turn):
+    if color == 'white':
+        opposing_pieces = black_locations
+        friendly_pieces = white_locations
+    else:
+        opposing_pieces = white_locations
+        friendly_pieces = black_locations
+    
+    for i in range(4):
+        path = True
+        chain_length = 1
+        if i == 0:
+            x = 1
+            y = -1
+        elif i == 1:
+            x = -1
+            y = -1
+        elif i == 2:
+            x = 1
+            y = 1
+        else: 
+            x = -1
+            y = 1
 
-#def check_queen(locations, turn):
+        while path:
+            if (position[0] + (chain_length * x), position[1] + (chain_length * y)) not in friendly_pieces and 0 <= position[0] + (chain_length * x) <= 7 and 0 <= position[1] + (chain_length * y) <= 7:
+                moves_list.append((position[0] + chain_length * x, position[1] + (chain_length * y)))
+                if (position[0] + (chain_length * x), position[1] + (chain_length * y)) in opposing_pieces:
+                    path = False
+                chain_length += 1
+            else:
+                path = False
+    
+    return moves_list
 
-##def check_king(locations, turn):
+def check_knight(position, color, white_locations, black_locations):
+    moves_list = []
+
+    if color == 'white':
+        friendly_pieces = white_locations
+    else:
+        friendly_pieces = black_locations
+
+    valid_knight_moves = [(1, 2), (1, -2), (2, 1), (2, -1), (-1, -2), (-1, 2), (-2, 1), (-2, -1)]
+    
+    for i in range(8):
+        knight_move = (position[0] + valid_knight_moves[i][0], position[1] + valid_knight_moves[i][1])
+        if knight_move not in friendly_pieces and 0 <= knight_move[0] <= 7 and 0 <= knight_move[1] <= 7:
+            moves_list.append(knight_move)
+
+    return moves_list
+
+def check_queen(position, color, white_locations, black_locations):
+    straight_move_list = check_rook(position, color, white_locations, black_locations)
+    diagonal_move_list = check_bishop(position, color, white_locations, black_locations)
+
+    for move in diagonal_move_list:
+        straight_move_list.append(move)
+
+    return straight_move_list
+
+def check_king(position, color, white_locations, black_locations):
+    moves_list = []
+
+    if color == 'white':
+        opposing_pieces = black_locations
+        friendly_pieces = white_locations
+    else:
+        opposing_pieces = white_locations
+        friendly_pieces = black_locations
+
+    valid_king_moves = [(1, 0), (1, 1), (1, -1), (-1, 0), (-1, 1), (-1, -1), (0, 1), (0, -1)]
+    
+    for i in range(8):
+        king_move = (position[0] + valid_king_moves[i][0], position[1] + valid_king_moves[i][1])
+        if king_move not in friendly_pieces and 0 <= king_move[0] <= 7 and 0 <= king_move[1] <= 7:
+            moves_list.append(king_move)
+
+    return moves_list
