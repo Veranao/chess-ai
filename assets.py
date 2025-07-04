@@ -11,7 +11,7 @@ def load_pieces(side, image_arr, image_arr_small, piece_list):
         small_piece = pygame.transform.scale(piece, (150, 150))
         image_arr_small.append(small_piece)
 
-def draw_board(screen, width, height, turn_step, big_font, turn_prompt):
+def draw_board(screen, width, height, turn_step, big_font, turn_prompt, white_promote, black_promote):
     for i in range(32):
         row = i // 4
         column = i % 4
@@ -33,6 +33,12 @@ def draw_board(screen, width, height, turn_step, big_font, turn_prompt):
         pygame.draw.line(screen, 'black', (100 * i, 0), (100 * i, 800), 5)
     
     screen.blit(big_font.render('RESIGN', True, 'black'), (837, 835))
+
+    if white_promote or black_promote:
+        pygame.draw.rect(screen, (0, 153, 0), [0, 800, width - 200, 100])
+        pygame.draw.rect(screen, (0, 53, 0), [0, 800, width - 200, 100], 5)
+        screen.blit(big_font.render('Select piece that you want to promote pawn to', True, 'black'), (20, 820))
+
 
 def draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection):
     for i in range(len(white_pieces)):
@@ -89,6 +95,24 @@ def draw_check(turn_step, white_pieces, black_pieces, white_locations, black_loc
                         pygame.draw.rect(screen, (255, 51, 51), [black_locations[king_index][0] * 100 + 1,
                                                                black_locations[king_index][1] * 100 + 1, 100, 100], 5)
                         
+def draw_promotion(screen, white_promote, black_promote, white_promotions, black_promotions, piece_list, white_images, black_images):
+    pygame.draw.rect(screen, 'light gray', [800, 0, 200, 450])
+    if white_promote:
+        color = 'white'
+        for i in range(len(white_promotions)):
+            piece = white_promotions[i]
+            index = piece_list.index(piece)
+            screen.blit(white_images[index], (860, 5 + 100 * i))
+    elif black_promote:
+        color = 'black'
+        for i in range(len(black_promotions)):
+            piece = black_promotions[i]
+            index = piece_list.index(piece)
+            screen.blit(black_images[index], (860, 5 + 100 * i))
+
+    pygame.draw.rect(screen, color, [800, 0, 200, 450], 8)
+
+
 def draw_game_over(screen, font, winner):
     pygame.draw.rect(screen, 'white', [200, 200, 500, 200])
     screen.blit(font.render(f'{winner} won the game!', True, 'black'), (210, 210))

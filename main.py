@@ -21,6 +21,9 @@ pygame.display.set_caption('Chess in Python')
 white_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn' ]
 black_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn' ]
 
+white_promotions = ['bishop', 'knight', 'rook', 'queen']
+black_promotions = ['bishop', 'knight', 'rook', 'queen']
+
 white_locations = [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1)]
 black_locations = [(0, 7), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7), (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6)]
 
@@ -41,6 +44,9 @@ white_queenside_rook_moved = False
 black_king_moved = False
 black_kingside_rook_moved = False
 black_queenside_rook_moved = False
+white_promote = False
+black_promote = False
+promo_index = 100
 
 #load in game piece images
 piece_list = ['pawn', 'queen', 'king', 'knight', 'rook', 'bishop']
@@ -94,10 +100,16 @@ while run:
         counter += 1
     else:
         counter = 0
-    draw_board(screen, WIDTH, HEIGHT, turn_step, big_font, turn_prompt)
+    draw_board(screen, WIDTH, HEIGHT, turn_step, big_font, turn_prompt, white_promote, black_promote)
     draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection)
     draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen)
     draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter)
+    
+    if not game_over:
+        white_promote, black_promote, promo_index = check_promotion(white_pieces, black_pieces, white_locations, black_locations)
+        if white_promote or black_promote:
+            draw_promotion(screen, white_promote, black_promote, white_promotions, black_promotions, piece_list, white_images, black_images)
+            check_promotion_select(white_promote, black_promote, promo_index, white_pieces, black_pieces, white_promotions, black_promotions)
 
     if selection != 100:
         valid_moves = check_valid_moves(turn_step, white_options, black_options, selection)
