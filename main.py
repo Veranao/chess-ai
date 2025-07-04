@@ -59,69 +59,25 @@ turn_prompt = ['White: Select a piece to move!', 'White: Select where to go!', '
 def check_options(pieces, locations, turn):
     moves_list = []
     all_moves_list = []
-    opponent_moves = []
-
-    if turn == 'white':
-        for i in range(len(black_pieces)):
-            loc = black_locations[i]
-            piece = black_pieces[i]
-            if piece == 'pawn':
-                moves = check_pawn(loc, 'black', white_locations, black_locations, en_passant_target)
-            elif piece == 'rook':
-                moves = check_rook(loc, 'black', white_locations, black_locations)
-            elif piece == 'bishop':
-                moves = check_bishop(loc, 'black', white_locations, black_locations)
-            elif piece == 'knight':
-                moves = check_knight(loc, 'black', white_locations, black_locations)
-            elif piece == 'queen':
-                moves = check_queen(loc, 'black', white_locations, black_locations)
-            else:
-                moves = check_king(loc, 'black', white_locations, black_locations,
-                                white_king_moved, white_kingside_rook_moved, white_queenside_rook_moved,
-                                black_king_moved, black_kingside_rook_moved, black_queenside_rook_moved, opponent_moves)
-            opponent_moves.extend(moves)
-    else:
-        for i in range(len(white_pieces)):
-            loc = white_locations[i]
-            piece = white_pieces[i]
-            if piece == 'pawn':
-                moves = check_pawn(loc, 'white', white_locations, black_locations, en_passant_target)
-            elif piece == 'rook':
-                moves = check_rook(loc, 'white', white_locations, black_locations)
-            elif piece == 'bishop':
-                moves = check_bishop(loc, 'white', white_locations, black_locations)
-            elif piece == 'knight':
-                moves = check_knight(loc, 'white', white_locations, black_locations)
-            elif piece == 'queen':
-                moves = check_queen(loc, 'white', white_locations, black_locations)
-            else:
-                moves = check_king(loc, 'white', white_locations, black_locations,
-                                white_king_moved, white_kingside_rook_moved, white_queenside_rook_moved,
-                                black_king_moved, black_kingside_rook_moved, black_queenside_rook_moved,
-                                opponent_moves)
-            opponent_moves.extend(moves)
 
     for i in range(len(pieces)):
-            location = locations[i]
-            piece = pieces[i]
+        location = locations[i]
+        piece = pieces[i]
 
-            if piece == 'pawn':
-                moves_list = check_pawn(location, turn, white_locations, black_locations, en_passant_target)
-            elif piece == 'rook':
-                moves_list = check_rook(location, turn, white_locations, black_locations)
-            elif piece == 'bishop':
-                moves_list = check_bishop(location, turn, white_locations, black_locations)
-            elif piece == 'knight':
-                moves_list = check_knight(location, turn, white_locations, black_locations)
-            elif piece == 'queen':
-                moves_list = check_queen(location, turn, white_locations, black_locations)
-            else:
-                moves_list = check_king(location, turn, white_locations, black_locations,
-                                        white_king_moved, white_kingside_rook_moved, white_queenside_rook_moved,
-                                        black_king_moved, black_kingside_rook_moved, black_queenside_rook_moved,
-                                        opponent_moves)
+        if piece == 'pawn':
+            moves_list = check_pawn(location, turn, white_locations, black_locations, en_passant_target)
+        elif piece == 'rook':
+            moves_list = check_rook(location, turn, white_locations, black_locations)
+        elif piece == 'bishop':
+            moves_list = check_bishop(location, turn, white_locations, black_locations)
+        elif piece == 'knight':
+            moves_list = check_knight(location, turn, white_locations, black_locations)
+        elif piece == 'queen':
+            moves_list = check_queen(location, turn, white_locations, black_locations)
+        else:
+            moves_list = check_king(location, turn, white_locations, black_locations)
 
-            all_moves_list.append(moves_list)
+        all_moves_list.append(moves_list)
 
     return all_moves_list
 
@@ -181,24 +137,6 @@ while run:
                             en_passant_target = None
                     else:
                         en_passant_target = None
-
-                    if white_pieces[selection] == 'king':
-                        white_king_moved = True
-                    elif white_pieces[selection] == 'rook':
-                        if start_y == 0 and white_locations[selection][0] == 0 and selection in [0, 7]:
-                            white_queenside_rook_moved = True
-                        elif start_y == 0 and white_locations[selection][0] == 7 and selection in [0, 7]:
-                            white_kingside_rook_moved = True
-
-                    if white_pieces[selection] == 'king':
-                        if chess_coordinate == (5, 0):  # Kingside
-                            if (7, 0) in white_locations:
-                                rook_index = white_locations.index((7, 0))
-                                white_locations[rook_index] = (5, 0)
-                        elif chess_coordinate == (1, 0):  # Queenside
-                            if (0, 0) in white_locations:
-                                rook_index = white_locations.index((0, 0))
-                                white_locations[rook_index] = (2, 0)
                 
                     if chess_coordinate in black_locations:
                         black_piece = black_locations.index(chess_coordinate)
@@ -240,24 +178,6 @@ while run:
                     else:
                         en_passant_target = None
 
-                    if black_pieces[selection] == 'king':
-                        black_king_moved = True
-                    elif black_pieces[selection] == 'rook':
-                        if start_y == 7 and black_locations[selection][0] == 0 and selection in [0, 7]:
-                            black_queenside_rook_moved = True
-                        elif start_y == 7 and black_locations[selection][0] == 7 and selection in [0, 7]:
-                            black_kingside_rook_moved = True
-
-                    if black_pieces[selection] == 'king':
-                        if chess_coordinate == (6, 7):  # Kingside
-                            if (7, 7) in black_locations:
-                                rook_index = black_locations.index((7, 7))
-                                black_locations[rook_index] = (5, 7)
-                        elif chess_coordinate == (2, 7):  # Queenside
-                            if (0, 7) in black_locations:
-                                rook_index = black_locations.index((0, 7))
-                                black_locations[rook_index] = (3, 7)
-
                     if chess_coordinate in white_locations:
                         white_piece = white_locations.index(chess_coordinate)
                         captured_black_pieces.append(white_pieces[white_piece])
@@ -289,12 +209,8 @@ while run:
                 valid_moves = []
                 black_options = check_options(black_pieces, black_locations, 'black')
                 white_options = check_options(white_pieces, white_locations, 'white')
-                white_king_moved = False
-                white_kingside_rook_moved = False
-                white_queenside_rook_moved = False
-                black_king_moved = False
-                black_kingside_rook_moved = False
-                black_queenside_rook_moved = False
+
+
 
     if winner != '':
         game_over = True

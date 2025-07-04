@@ -14,9 +14,8 @@ def check_pawn(position, color, white_locations, black_locations, en_passant_tar
     if color == 'white':
         if (position[0], position[1] + 1) not in white_locations and (position[0], position[1] + 1) not in black_locations and position[1] < 7:
             moves_list.append((position[0], position[1] + 1))
-        
-        if (position[0], position[1] + 2) not in white_locations and (position[0], position[1] + 2) not in black_locations and position[1] == 1:
-            moves_list.append((position[0], position[1] + 2))
+            if (position[0], position[1] + 2) not in white_locations and (position[0], position[1] + 2) not in black_locations and position[1] == 1:
+                moves_list.append((position[0], position[1] + 2))
         
         if (position[0] + 1, position[1] + 1) in black_locations:
             moves_list.append((position[0] + 1, position[1] + 1))
@@ -30,9 +29,8 @@ def check_pawn(position, color, white_locations, black_locations, en_passant_tar
     else:
         if (position[0], position[1] - 1) not in white_locations and (position[0], position[1] - 1) not in black_locations and position[1] > 0:
             moves_list.append((position[0], position[1] - 1))
-        
-        if (position[0], position[1] - 2) not in white_locations and (position[0], position[1] - 2) not in black_locations and position[1] == 6:
-            moves_list.append((position[0], position[1] - 2))
+            if (position[0], position[1] - 2) not in white_locations and (position[0], position[1] - 2) not in black_locations and position[1] == 6:
+                moves_list.append((position[0], position[1] - 2))
         
         if (position[0] + 1, position[1] - 1) in white_locations:
             moves_list.append((position[0] + 1, position[1] - 1))
@@ -146,7 +144,7 @@ def check_queen(position, color, white_locations, black_locations):
 
     return straight_move_list
 
-def check_king(position, color, white_locations, black_locations, white_king_moved, white_kingside_rook_moved, white_queenside_rook_moved, black_king_moved, black_kingside_rook_moved, black_queenside_rook_moved, opponent_moves):
+def check_king(position, color, white_locations, black_locations):
     moves_list = []
 
     if color == 'white':
@@ -162,25 +160,5 @@ def check_king(position, color, white_locations, black_locations, white_king_mov
         king_move = (position[0] + valid_king_moves[i][0], position[1] + valid_king_moves[i][1])
         if king_move not in friendly_pieces and 0 <= king_move[0] <= 7 and 0 <= king_move[1] <= 7:
             moves_list.append(king_move)
-
-    if color == 'white' and position == (3, 0):
-        if not white_king_moved and not white_kingside_rook_moved:
-            if all(sq not in white_locations + black_locations for sq in [(5, 0), (6, 0)]):
-                if all(sq not in opponent_moves for sq in [(4, 0), (5, 0)]):
-                    moves_list.append((6, 0))
-        if not white_king_moved and not white_queenside_rook_moved:
-            if all(sq not in white_locations + black_locations for sq in [(1, 0), (2, 0), (3, 0)]):
-                if all(sq not in opponent_moves for sq in [(3, 0), (2, 0)]):
-                    moves_list.append((2, 0))
-
-    if color == 'black' and position == (3, 7):
-        if not black_king_moved and not black_kingside_rook_moved:
-            if all(sq not in white_locations + black_locations for sq in [(5, 7), (6, 7)]):
-                if all(sq not in opponent_moves for sq in [(4, 7), (5, 7)]):
-                    moves_list.append((6, 7))
-        if not black_king_moved and not black_queenside_rook_moved:
-            if all(sq not in white_locations + black_locations for sq in [(1, 7), (2, 7), (3, 7)]):
-                if all(sq not in opponent_moves for sq in [(3, 7), (2, 7)]):
-                    moves_list.append((2, 7))
 
     return moves_list
