@@ -57,6 +57,14 @@ small_white_images = []
 black_images = []
 small_black_images = []
 
+white_moved = []
+black_moved = []
+
+# initialize move check to false for all pieces
+for i in range(len(white_pieces)):
+    white_moved.append(False)
+    black_moved.append(False)
+
 load_pieces("b", black_images, small_black_images, piece_list)
 load_pieces("w", white_images, small_white_images, piece_list)
 
@@ -123,16 +131,19 @@ while run:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not game_over: 
             chess_coordinate = (event.pos[0] // 100, event.pos[1] // 100)
 
+            # white move
             if turn_step < 2:
                 if chess_coordinate == (8, 8) or chess_coordinate == (9, 9):
                     winner = 'Black'
                 if chess_coordinate in white_locations:
                     selection = white_locations.index(chess_coordinate)
+                    selected_piece = white_pieces[selection]
                     if turn_step == 0:
                         turn_step = 1
                 if chess_coordinate in valid_moves and selection != 100:
                     start_y = white_locations[selection][1]
                     white_locations[selection] = chess_coordinate
+                    white_moved[selection] = True # track if the piece has ever moved
 
                     if white_pieces[selection] == 'pawn' and chess_coordinate == en_passant_target:
                         captured_white_pieces.append('pawn')
@@ -141,6 +152,7 @@ while run:
                             black_index = black_locations.index(captured_pos)
                             black_pieces.pop(black_index)
                             black_locations.pop(black_index)
+                            black_moved.pop(black_index)
 
                     if white_pieces[selection] == 'pawn':
                         if abs(chess_coordinate[1] - start_y) == 2:
@@ -157,22 +169,27 @@ while run:
                             winner = 'White'
                         black_pieces.pop(black_piece)
                         black_locations.pop(black_piece)
+                        black_moved.pop(black_piece)
+
                     black_options = check_options(black_pieces, black_locations, 'black')
                     white_options = check_options(white_pieces, white_locations, 'white')
                     turn_step = 2
                     selection = 100
                     valid_moves = []
 
+            # black move
             if turn_step > 1:
                 if chess_coordinate == (8, 8) or chess_coordinate == (9, 9):
                     winner = 'White'
                 if chess_coordinate in black_locations:
                     selection = black_locations.index(chess_coordinate)
+                    selected_piece = black_pieces[selection]
                     if turn_step == 2:
                         turn_step = 3
                 if chess_coordinate in valid_moves and selection != 100:
                     start_y = black_locations[selection][1]
                     black_locations[selection] = chess_coordinate
+                    black_moved[selection] = True # track if the piece has ever moved
 
                     if black_pieces[selection] == 'pawn' and chess_coordinate == en_passant_target:
                         captured_black_pieces.append('pawn')
@@ -197,12 +214,16 @@ while run:
                             winner = 'Black'
                         white_pieces.pop(white_piece)
                         white_locations.pop(white_piece)
+                        white_moved.pop(white_piece)
+
                     black_options = check_options(black_pieces, black_locations, 'black')
                     white_options = check_options(white_pieces, white_locations, 'white')
                     turn_step = 0
                     selection = 100
                     valid_moves = []
         if event.type == pygame.KEYDOWN and game_over: 
+
+            # reset all parts
             if event.key == pygame.K_RETURN:
                 game_over = False
                 winner = ''
@@ -214,6 +235,12 @@ while run:
                                 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
                 black_locations = [(0, 7), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7),
                                 (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6)]
+                
+                # initialize move check to false for all pieces
+                for i in range(len(white_pieces)):
+                    white_moved[i] = False
+                    black_moved[i] = False
+
                 captured_white_pieces = []
                 captured_black_pieces = []
                 turn_step = 0
