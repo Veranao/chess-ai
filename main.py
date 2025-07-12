@@ -30,6 +30,9 @@ black_locations = [(0, 7), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7
 captured_white_pieces = []
 captured_black_pieces = []
 
+white_options = []
+black_options = []
+
 #0 - white turn, no selection
 #1 - white turn, piece selected
 #2 - black turn, no selection
@@ -60,6 +63,8 @@ small_black_images = []
 white_moved = []
 black_moved = []
 
+in_check = False
+
 # initialize move check to false for all pieces
 for i in range(len(white_pieces)):
     white_moved.append(False)
@@ -73,6 +78,7 @@ turn_prompt = ['White: Select a piece to move!', 'White: Select where to go!', '
 def check_options(pieces, locations, turn):
     moves_list = []
     all_moves_list = []
+    castling_moves = []
 
     for i in range(len(pieces)):
         location = locations[i]
@@ -89,16 +95,16 @@ def check_options(pieces, locations, turn):
         elif piece == 'queen':
             moves_list = check_queen(location, turn, white_locations, black_locations)
         else:
-            moves_list = check_king(location, turn, white_locations, black_locations)
+            moves_list, castling_moves = check_king(location, turn, white_pieces, black_pieces, white_locations, black_locations, white_moved, black_moved, white_options, black_options)
 
         all_moves_list.append(moves_list)
 
-    return all_moves_list
+    return all_moves_list, castling_moves
 
 #def restart_game(game_over):
 
-black_options = check_options(black_pieces, black_locations, 'black')
-white_options = check_options(white_pieces, white_locations, 'white')
+black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
+white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
 run = True
 
 while run:
@@ -111,7 +117,7 @@ while run:
     draw_board(screen, WIDTH, HEIGHT, turn_step, big_font, turn_prompt, white_promote, black_promote)
     draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection)
     draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen)
-    draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter)
+    in_check = draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter) # draws check and also returns if in check
     
     if not game_over:
         white_promote, black_promote, promo_index = check_promotion(white_pieces, black_pieces, white_locations, black_locations)
@@ -122,6 +128,8 @@ while run:
     if selection != 100:
         valid_moves = check_valid_moves(turn_step, white_options, black_options, selection)
         draw_valid(valid_moves, turn_step, screen)
+        if selected_piece == 'king':
+            draw_castling(turn_step, white_castle_options, black_castle_options, screen, font)
 
     #event handling for quitting the game
     for event in pygame.event.get():
@@ -138,6 +146,10 @@ while run:
                 if chess_coordinate in white_locations:
                     selection = white_locations.index(chess_coordinate)
                     selected_piece = white_pieces[selection]
+
+                    # if selected_piece == 'king':
+                    #     draw_castling(turn_step, white_castle_options, black_castle_options, screen, font)
+            
                     if turn_step == 0:
                         turn_step = 1
                 if chess_coordinate in valid_moves and selection != 100:
@@ -171,8 +183,8 @@ while run:
                         black_locations.pop(black_piece)
                         black_moved.pop(black_piece)
 
-                    black_options = check_options(black_pieces, black_locations, 'black')
-                    white_options = check_options(white_pieces, white_locations, 'white')
+                    black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
+                    white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
                     turn_step = 2
                     selection = 100
                     valid_moves = []
@@ -184,6 +196,10 @@ while run:
                 if chess_coordinate in black_locations:
                     selection = black_locations.index(chess_coordinate)
                     selected_piece = black_pieces[selection]
+
+                    # if selected_piece == 'king':
+                    #     draw_castling(turn_step, white_castle_options, black_castle_options, screen, font)
+                    
                     if turn_step == 2:
                         turn_step = 3
                 if chess_coordinate in valid_moves and selection != 100:
@@ -216,8 +232,8 @@ while run:
                         white_locations.pop(white_piece)
                         white_moved.pop(white_piece)
 
-                    black_options = check_options(black_pieces, black_locations, 'black')
-                    white_options = check_options(white_pieces, white_locations, 'white')
+                    black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
+                    white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
                     turn_step = 0
                     selection = 100
                     valid_moves = []
@@ -241,13 +257,15 @@ while run:
                     white_moved[i] = False
                     black_moved[i] = False
 
+                in_check = False
+
                 captured_white_pieces = []
                 captured_black_pieces = []
                 turn_step = 0
                 selection = 100
                 valid_moves = []
-                black_options = check_options(black_pieces, black_locations, 'black')
-                white_options = check_options(white_pieces, white_locations, 'white')
+                black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
+                white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
 
 
 

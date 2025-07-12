@@ -62,6 +62,27 @@ def draw_valid(moves, turn_step, screen):
     for i in range(len(moves)):
         pygame.draw.circle(screen, 'red', (moves[i][0] * 100 + 50, moves[i][1] * 100 + 50), 5)
 
+def check_castling():
+    pass
+
+
+def draw_castling(turn_step, white_castle_moves, black_castle_moves, screen, font):
+    if turn_step < 2: # white's turn
+        color = 'red'
+        moves = white_castle_moves
+    else:
+        color = 'blue'
+        moves = black_castle_moves
+
+    for i in range(len(moves)):
+        pygame.draw.circle(screen, color, (moves[i][0][0] * 100 + 50, moves[i][0][1] * 100 + 70), 8) # drawing king's move
+        screen.blit(font.render('king', True, 'black'), (moves[i][0][0] * 100 + 30, moves[i][0][1] * 100 + 70))
+
+        pygame.draw.circle(screen, color, (moves[i][1][0] * 100 + 50, moves[i][1][1] * 100 + 70), 8) # drawing rooks's move
+        screen.blit(font.render('rook', True, 'black'), (moves[i][1][0] * 100 + 30, moves[i][1][1] * 100 + 70))
+
+        pygame.draw.line(screen, color, (moves[i][0][0] * 100 + 50, moves[i][0][1] * 100 + 70), (moves[i][1][0] * 100 + 50, moves[i][1][1] * 100 + 70), 2)
+
 def draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen):
     
     for i in range(len(captured_white_pieces)):
@@ -82,6 +103,7 @@ def draw_check(turn_step, white_pieces, black_pieces, white_locations, black_loc
             king_location = white_locations[king_index]
             for i in range(len(black_options)):
                 if king_location in black_options[i]:
+                    checked = True
                     if counter < 15:
                         pygame.draw.rect(screen, (255, 51, 51), [white_locations[king_index][0] * 100 + 1,
                                                               white_locations[king_index][1] * 100 + 1, 100, 100], 5)
@@ -91,9 +113,12 @@ def draw_check(turn_step, white_pieces, black_pieces, white_locations, black_loc
             king_location = black_locations[king_index]
             for i in range(len(white_options)):
                 if king_location in white_options[i]:
+                    checked = True
                     if counter < 15:
                         pygame.draw.rect(screen, (255, 51, 51), [black_locations[king_index][0] * 100 + 1,
                                                                black_locations[king_index][1] * 100 + 1, 100, 100], 5)
+    
+    return checked
                         
 def draw_promotion(screen, white_promote, black_promote, white_promotions, black_promotions, piece_list, white_images, black_images):
     pygame.draw.rect(screen, 'light gray', [800, 0, 200, 450])
