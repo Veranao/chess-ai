@@ -141,6 +141,7 @@ while run:
 
             # white move
             if turn_step < 2:
+                turn_moved = False
                 if chess_coordinate == (8, 8) or chess_coordinate == (9, 9):
                     winner = 'Black'
                 if chess_coordinate in white_locations:
@@ -183,14 +184,35 @@ while run:
                         black_locations.pop(black_piece)
                         black_moved.pop(black_piece)
 
+                    turn_moved = True
+
+                elif selection != 100 and selected_piece == 'king': # check for castling
+                    for q in range(len(white_castle_options)):
+                        if chess_coordinate == white_castle_options[q][0]:
+                            white_locations[selection] = chess_coordinate
+                            white_moved[selection] = True
+
+                            if chess_coordinate == (1, 0): 
+                                rook_coords = (0,0)
+                            else:
+                                rook_coords = (7,0)
+                            
+                            rook_index = white_locations.index(rook_coords)
+                            white_locations[rook_index] = white_castle_options[q][1]
+
+                            turn_moved = True
+
+                if turn_moved:
                     black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
                     white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
                     turn_step = 2
                     selection = 100
                     valid_moves = []
-
+                            
             # black move
             if turn_step > 1:
+                turn_moved = False
+
                 if chess_coordinate == (8, 8) or chess_coordinate == (9, 9):
                     winner = 'White'
                 if chess_coordinate in black_locations:
@@ -232,6 +254,25 @@ while run:
                         white_locations.pop(white_piece)
                         white_moved.pop(white_piece)
 
+                    turn_moved = True
+
+                elif selection != 100 and selected_piece == 'king': # check for castling
+                    for q in range(len(black_castle_options)):
+                        if chess_coordinate == black_castle_options[q][0]:
+                            black_locations[selection] = chess_coordinate
+                            black_moved[selection] = True
+
+                            if chess_coordinate == (1, 7): 
+                                rook_coords = (0, 7)
+                            else:
+                                rook_coords = (7, 7)
+                            
+                            rook_index = black_locations.index(rook_coords)
+                            black_locations[rook_index] = black_castle_options[q][1]
+
+                            turn_moved = True
+
+                if turn_moved:
                     black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
                     white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
                     turn_step = 0
