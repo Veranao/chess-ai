@@ -1,6 +1,9 @@
 import pygame
 from assets import *
 from checkvalidmoves import *
+from chessengine import *
+import random
+import time
 
 pygame.init()
 # Declaring global varables for board setup
@@ -14,6 +17,13 @@ frames_per_second = 60
 counter = 0
 winner = ''
 game_over = False
+player_select = True
+human_player_white = False
+human_player_black = True
+turn_moved = False
+ai_delay = 0.4
+ai_waiting = False
+ai_start_time = 0
 pygame.display.set_caption('Chess in Python')
 
 
@@ -101,11 +111,34 @@ def check_options(pieces, locations, turn):
 
     return all_moves_list, castling_moves
 
-#def restart_game(game_over):
-
 black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
 white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
 run = True
+
+while player_select:
+        screen.fill((0, 153, 0))
+
+        box_width = 600
+        box_height = 150
+        box_x = (WIDTH - box_width) // 2
+        box_y = (HEIGHT - box_height) // 2
+        pygame.draw.rect(screen, (50, 200, 50), [box_x, box_y, box_width, box_height])
+        screen.blit(font.render('Press 1 to play against a human or any other key to play against AI!', True, 'black'), (245 + (600 - box_width) // 2, 440 + (150 - box_height) // 2))
+
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    human_player_white = True
+                    human_player_black = True
+
+                player_select = False
 
 while run:
     timer.tick(frames_per_second)
@@ -118,7 +151,7 @@ while run:
     draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection)
     draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen)
     in_check = draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter) # draws check and also returns if in check
-    
+
     if not game_over:
         white_promote, black_promote, promo_index = check_promotion(white_pieces, black_pieces, white_locations, black_locations)
         if white_promote or black_promote:
@@ -131,86 +164,86 @@ while run:
         if selected_piece == 'king':
             draw_castling(turn_step, white_castle_options, black_castle_options, screen, font)
 
+
     #event handling for quitting the game
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
 
+        print(f"turn_step = {turn_step}, human_player_black = {human_player_black}, game_over = {game_over}")
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not game_over: 
             chess_coordinate = (event.pos[0] // 100, event.pos[1] // 100)
 
             # white move
             if turn_step < 2:
-                turn_moved = False
-                if chess_coordinate == (8, 8) or chess_coordinate == (9, 9):
-                    winner = 'Black'
-                if chess_coordinate in white_locations:
-                    selection = white_locations.index(chess_coordinate)
-                    selected_piece = white_pieces[selection]
+                if human_player_white:
+                    turn_moved = False
+                    if chess_coordinate == (8, 8) or chess_coordinate == (9, 9):
+                        winner = 'Black'
+                    if chess_coordinate in white_locations:
+                        selection = white_locations.index(chess_coordinate)
+                        selected_piece = white_pieces[selection]
 
-                    # if selected_piece == 'king':
-                    #     draw_castling(turn_step, white_castle_options, black_castle_options, screen, font)
-            
-                    if turn_step == 0:
-                        turn_step = 1
-                if chess_coordinate in valid_moves and selection != 100:
-                    start_y = white_locations[selection][1]
-                    white_locations[selection] = chess_coordinate
-                    white_moved[selection] = True # track if the piece has ever moved
+                        if turn_step == 0:
+                            turn_step = 1
+                    if chess_coordinate in valid_moves and selection != 100:
+                        start_y = white_locations[selection][1]
+                        white_locations[selection] = chess_coordinate
+                        white_moved[selection] = True 
 
-                    if white_pieces[selection] == 'pawn' and chess_coordinate == en_passant_target:
-                        captured_white_pieces.append('pawn')
-                        captured_pos = (chess_coordinate[0], start_y)
-                        if captured_pos in black_locations:
-                            black_index = black_locations.index(captured_pos)
-                            black_pieces.pop(black_index)
-                            black_locations.pop(black_index)
-                            black_moved.pop(black_index)
+                        if white_pieces[selection] == 'pawn' and chess_coordinate == en_passant_target:
+                            captured_white_pieces.append('pawn')
+                            captured_pos = (chess_coordinate[0], start_y)
+                            if captured_pos in black_locations:
+                                black_index = black_locations.index(captured_pos)
+                                black_pieces.pop(black_index)
+                                black_locations.pop(black_index)
+                                black_moved.pop(black_index)
 
-                    if white_pieces[selection] == 'pawn':
-                        if abs(chess_coordinate[1] - start_y) == 2:
-                            en_passant_target = (chess_coordinate[0], chess_coordinate[1] - 1)
+                        if white_pieces[selection] == 'pawn':
+                            if abs(chess_coordinate[1] - start_y) == 2:
+                                en_passant_target = (chess_coordinate[0], chess_coordinate[1] - 1)
+                            else:
+                                en_passant_target = None
                         else:
                             en_passant_target = None
-                    else:
-                        en_passant_target = None
-                
-                    if chess_coordinate in black_locations:
-                        black_piece = black_locations.index(chess_coordinate)
-                        captured_white_pieces.append(black_pieces[black_piece])
-                        if (black_pieces[black_piece] == 'king'):
-                            winner = 'White'
-                        black_pieces.pop(black_piece)
-                        black_locations.pop(black_piece)
-                        black_moved.pop(black_piece)
+                    
+                        if chess_coordinate in black_locations:
+                            black_piece = black_locations.index(chess_coordinate)
+                            captured_white_pieces.append(black_pieces[black_piece])
+                            if (black_pieces[black_piece] == 'king'):
+                                winner = 'White'
+                            black_pieces.pop(black_piece)
+                            black_locations.pop(black_piece)
+                            black_moved.pop(black_piece)
 
-                    turn_moved = True
+                        turn_moved = True
 
-                elif selection != 100 and selected_piece == 'king': # check for castling
-                    for q in range(len(white_castle_options)):
-                        if chess_coordinate == white_castle_options[q][0]:
-                            white_locations[selection] = chess_coordinate
-                            white_moved[selection] = True
+                    elif selection != 100 and selected_piece == 'king': # check for castling
+                        for q in range(len(white_castle_options)):
+                            if chess_coordinate == white_castle_options[q][0]:
+                                white_locations[selection] = chess_coordinate
+                                white_moved[selection] = True
 
-                            if chess_coordinate == (1, 0): 
-                                rook_coords = (0,0)
-                            else:
-                                rook_coords = (7,0)
-                            
-                            rook_index = white_locations.index(rook_coords)
-                            white_locations[rook_index] = white_castle_options[q][1]
+                                if chess_coordinate == (1, 0): 
+                                    rook_coords = (0,0)
+                                else:
+                                    rook_coords = (7,0)
+                                
+                                rook_index = white_locations.index(rook_coords)
+                                white_locations[rook_index] = white_castle_options[q][1]
 
-                            turn_moved = True
+                                turn_moved = True
 
-                if turn_moved:
-                    black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
-                    white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
-                    turn_step = 2
-                    selection = 100
-                    valid_moves = []
-                            
+                    if turn_moved:
+                        black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
+                        white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
+                        turn_step = 2
+                        selection = 100
+                        valid_moves = []
+
             # black move
-            if turn_step > 1:
+            if turn_step > 1 and human_player_black:
                 turn_moved = False
 
                 if chess_coordinate == (8, 8) or chess_coordinate == (9, 9):
@@ -256,7 +289,7 @@ while run:
 
                     turn_moved = True
 
-                elif selection != 100 and selected_piece == 'king': # check for castling
+                elif selection != 100 and selected_piece == 'king':
                     for q in range(len(black_castle_options)):
                         if chess_coordinate == black_castle_options[q][0]:
                             black_locations[selection] = chess_coordinate
@@ -278,42 +311,85 @@ while run:
                     turn_step = 0
                     selection = 100
                     valid_moves = []
-        if event.type == pygame.KEYDOWN and game_over: 
+    if not human_player_white and turn_step < 2 and not game_over:
+        if not ai_waiting:
+            ai_start_time = time.time()
+            ai_waiting = True
+        elif time.time() - ai_start_time >= ai_delay:
+            turn_moved = False
+            possible_moves = []
 
-            # reset all parts
-            if event.key == pygame.K_RETURN:
-                game_over = False
-                winner = ''
-                white_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook',
-                                'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
-                white_locations = [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0),
-                                (0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1)]
-                black_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook',
-                                'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
-                black_locations = [(0, 7), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7),
-                                (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6)]
-                
-                # initialize move check to false for all pieces
-                for i in range(len(white_pieces)):
-                    white_moved[i] = False
-                    black_moved[i] = False
+            #1) find a piece to move from the valid list
+            for i in range(len(white_options)):
+                valid_moves = check_valid_moves(turn_step, white_options, black_options, i)
+                for move in valid_moves:
+                    possible_moves.append((i, move))
 
-                in_check = False
+            #2) pick a piece to move form the valid list
+            if possible_moves:
+                selection, ai_move = possible_moves[random.randint(0, len(possible_moves) - 1)]
+                selected_piece = white_pieces[selection]
+                #3) Make the move
+                start_y = white_locations[selection][1]
+                white_locations[selection] = ai_move
+                white_moved[selection] = True
 
-                captured_white_pieces = []
-                captured_black_pieces = []
-                turn_step = 0
-                selection = 100
-                valid_moves = []
+                if ai_move in black_locations:
+                    black_piece = black_locations.index(ai_move)
+                    captured_white_pieces.append(black_pieces[black_piece])
+                    if (black_pieces[black_piece] == 'king'):
+                        winner = 'White'
+                    black_pieces.pop(black_piece)
+                    black_locations.pop(black_piece)
+                    
+                    black_moved.pop(black_piece)
+
+                turn_moved = True
+
+            if turn_moved:
                 black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
                 white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
+                turn_step = 2
+                selection = 100
+                valid_moves = []
+                ai_waiting = False
 
+    if event.type == pygame.KEYDOWN and game_over: 
+        # reset all parts
+        if event.key == pygame.K_RETURN:
+            game_over = False
+            winner = ''
+            white_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook',
+                            'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
+            white_locations = [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0),
+                            (0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1)]
+            black_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook',
+                            'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
+            black_locations = [(0, 7), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7),
+                            (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6)]
+            
+            # initialize move check to false for all pieces
+            white_moved = [False] * len(white_pieces)
+            black_moved = [False] * len(black_pieces)
 
+            in_check = False
+
+            captured_white_pieces = []
+            captured_black_pieces = []
+            turn_step = 0
+            selection = 100
+            valid_moves = []
+            black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
+            white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
+            human_player_white = True
+            human_player_black = True
+            player_select = True
 
     if winner != '':
         game_over = True
         draw_game_over(screen, font, winner)
     
+
     pygame.display.flip()
 pygame.quit()
 
