@@ -170,7 +170,6 @@ while run:
         if event.type == pygame.QUIT:
             run = False
 
-        print(f"turn_step = {turn_step}, human_player_black = {human_player_black}, game_over = {game_over}")
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not game_over: 
             chess_coordinate = (event.pos[0] // 100, event.pos[1] // 100)
 
@@ -311,6 +310,8 @@ while run:
                     turn_step = 0
                     selection = 100
                     valid_moves = []
+
+    #AI
     if not human_player_white and turn_step < 2 and not game_over:
         if not ai_waiting:
             ai_start_time = time.time()
@@ -334,6 +335,9 @@ while run:
                 white_locations[selection] = ai_move
                 white_moved[selection] = True
 
+                if white_pieces[selection] == 'pawn' and ai_move[1] == 7:
+                    white_pieces[selection] = random.choices(['queen', 'knight', 'bishop', 'rook'], weights=[8, 1, 1, 1], k=1)[0]
+
                 if ai_move in black_locations:
                     black_piece = black_locations.index(ai_move)
                     captured_white_pieces.append(black_pieces[black_piece])
@@ -341,8 +345,49 @@ while run:
                         winner = 'White'
                     black_pieces.pop(black_piece)
                     black_locations.pop(black_piece)
-                    
                     black_moved.pop(black_piece)
+
+                    if white_pieces[selection] == 'pawn' and ai_move == en_passant_target:
+                            captured_white_pieces.append('pawn')
+                            captured_pos = (ai_move[0], start_y)
+                            if captured_pos in black_locations:
+                                black_index = black_locations.index(captured_pos)
+                                black_pieces.pop(black_index)
+                                black_locations.pop(black_index)
+                                black_moved.pop(black_index)
+
+                    if white_pieces[selection] == 'pawn':
+                            if abs(ai_move[1] - start_y) == 2:
+                                en_passant_target = (ai_move[0], ai_move[1] - 1)
+                            else:
+                                en_passant_target = None
+                    else:
+                        en_passant_target = None
+                    
+                    if ai_move in black_locations:
+                        black_piece = black_locations.index(ai_move)
+                        captured_white_pieces.append(black_pieces[black_piece])
+                        if (black_pieces[black_piece] == 'king'):
+                            winner = 'White'
+                        black_pieces.pop(black_piece)
+                        black_locations.pop(black_piece)
+                        black_moved.pop(black_piece)
+
+                    turn_moved = True
+
+                elif selection != 100 and selected_piece == 'king':
+                    for q in range(len(black_castle_options)):
+                        if ai_move == black_castle_options[q][0]:
+                            black_locations[selection] = ai_move
+                            black_moved[selection] = True
+
+                            if ai_move == (1, 7): 
+                                rook_coords = (0, 7)
+                            else:
+                                rook_coords = (7, 7)
+                            
+                            rook_index = black_locations.index(rook_coords)
+                            black_locations[rook_index] = black_castle_options[q][1]
 
                 turn_moved = True
 
@@ -381,9 +426,9 @@ while run:
             valid_moves = []
             black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
             white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
-            human_player_white = True
-            human_player_black = True
             player_select = True
+            ai_waiting = False
+            ai_start_time = 0
 
     if winner != '':
         game_over = True
