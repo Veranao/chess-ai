@@ -93,6 +93,8 @@ def check_options(pieces, locations, turn):
     for i in range(len(pieces)):
         location = locations[i]
         piece = pieces[i]
+        enemy_locations = []
+        legal_moves = []
 
         if piece == 'pawn':
             moves_list = check_pawn(location, turn, white_locations, black_locations, en_passant_target)
@@ -106,13 +108,194 @@ def check_options(pieces, locations, turn):
             moves_list = check_queen(location, turn, white_locations, black_locations)
         else:
             moves_list, castling_moves = check_king(location, turn, white_pieces, black_pieces, white_locations, black_locations, white_moved, black_moved, white_options, black_options)
+        
+        for move in moves_list:
+            all_enemy_moves = []
+            if turn == 'white':
+                enemy_pieces = black_pieces[:]
+                enemy_locations = black_locations[:]
+                own_moves = white_moved[:]
+                enemy_possible_moves = black_moved[:]
 
-        all_moves_list.append(moves_list)
+                for j in range(len(enemy_pieces)):
+                    enemy_piece = enemy_pieces[j]
+                    enemy_location = enemy_locations[j]
+                    if enemy_piece == 'pawn':
+                        enemy_moves = check_pawn(enemy_location, 'black', white_locations, black_locations, en_passant_target)
+                    elif enemy_piece == 'rook':
+                        enemy_moves = check_rook(enemy_location, 'black', white_locations, black_locations)
+                    elif enemy_piece == 'bishop':
+                        enemy_moves = check_bishop(enemy_location, 'black', white_locations, black_locations)
+                    elif enemy_piece == 'knight':
+                        enemy_moves = check_knight(enemy_location, 'black', white_locations, black_locations)
+                    elif enemy_piece == 'queen':
+                        enemy_moves = check_queen(enemy_location, 'black', white_locations, black_locations)
+                    else:
+                        enemy_moves, _ = check_king(enemy_location, 'black', white_pieces, black_pieces, white_locations, black_locations, white_moved, black_moved, white_options, black_options)
+
+                    all_enemy_moves.extend(enemy_moves)
+                    print(f"{enemy_piece} at {enemy_location} can move to: {enemy_moves}")
+            else:
+                enemy_pieces = white_pieces[:]
+                enemy_locations = white_locations[:]
+                own_moves = black_moved[:]
+                enemy_possible_moves = white_moved[:]
+
+                for j in range(len(enemy_pieces)):
+                    enemy_piece = enemy_pieces[j]
+                    enemy_location = enemy_locations[j]
+                    if enemy_piece == 'pawn':
+                        enemy_moves = check_pawn(enemy_location, 'white', white_locations, black_locations, en_passant_target)
+                    elif enemy_piece == 'rook':
+                        enemy_moves= check_rook(enemy_location, 'white', white_locations, black_locations)
+                    elif enemy_piece == 'bishop':
+                        enemy_moves = check_bishop(enemy_location, 'white', white_locations, black_locations)
+                    elif enemy_piece == 'knight':
+                        enemy_moves = check_knight(enemy_location, 'white', white_locations, black_locations)
+                    elif enemy_piece == 'queen':
+                        enemy_moves = check_queen(enemy_location, 'white', white_locations, black_locations)
+                    else:
+                        enemy_moves , _ = check_king(enemy_location, 'white', white_pieces, black_pieces, white_locations, black_locations, white_moved, black_moved, white_options, black_options)
+
+                    all_enemy_moves.extend(enemy_moves)
+
+            for j in range(len(pieces)):
+                if pieces[j] == 'king':
+                    current_king_position = locations[j]
+                    break
+
+            legal_moves = []
+
+            for move in moves_list:
+                temp_locations = locations[:]
+                temp_locations[i] = move
+                temp_enemy_locations = enemy_locations[:]
+                temp_enemy_pieces = enemy_pieces[:]
+
+                if move in temp_enemy_locations:
+                    captured_index = temp_enemy_locations.index(move)
+                    del temp_enemy_locations[captured_index]
+                    del temp_enemy_pieces[captured_index]
+
+                if turn == 'white':
+                    temp_white_locations = temp_locations
+                    temp_black_locations = temp_enemy_locations[:]
+                else:
+                    temp_white_locations = temp_enemy_locations[:]
+                    temp_black_locations = temp_locations
+
+                simulated_enemy_moves = []
+                for j in range(len(temp_enemy_pieces)):
+                    enemy_piece = temp_enemy_pieces[j]
+                    enemy_location = temp_enemy_locations[j]
+                    if turn == 'white':
+                        wl, bl = temp_white_locations, temp_black_locations
+                        enemy_color = 'black'
+                    else:
+                        wl, bl = temp_white_locations, temp_black_locations
+                        enemy_color = 'white'
+
+                    if enemy_piece == 'pawn':
+                        enemy_moves = check_pawn(enemy_location, enemy_color, wl, bl, en_passant_target)
+                    elif enemy_piece == 'rook':
+                        enemy_moves = check_rook(enemy_location, enemy_color, wl, bl)
+                    elif enemy_piece == 'bishop':
+                        enemy_moves = check_bishop(enemy_location, enemy_color, wl, bl)
+                    elif enemy_piece == 'knight':
+                        enemy_moves = check_knight(enemy_location, enemy_color, wl, bl)
+                    elif enemy_piece == 'queen':
+                        enemy_moves = check_queen(enemy_location, enemy_color, wl, bl)
+                    else:
+                        enemy_moves, _ = check_king(enemy_location, enemy_color, white_pieces, black_pieces, wl, bl, white_moved, black_moved, white_options, black_options)
+
+                    simulated_enemy_moves.extend(enemy_moves)
+
+                for j in range(len(pieces)):
+                    if pieces[j] == 'king':
+                        king_pos = temp_locations[j]
+                        break
+
+                if king_pos not in simulated_enemy_moves:
+                    legal_moves.append(move)
+
+            print("Current legal moves for this piece:", legal_moves)
+
+        all_moves_list.append(legal_moves)
 
     return all_moves_list, castling_moves
 
+#Greedy Algorithm that moves based on material and a greedy capture heuristic
+def chess_ai_greedy_algorithm(pieces, locations, turn, options, white_pieces, black_pieces, white_locations, black_locations):
+    best_score = None
+    best_moves = []
+    piece_index = None
+    
+    #Simulate a move
+    for i in range(len(pieces)):
+        for move in options[i]:
+            new_locations = locations[:]
+            new_locations[i] = move
+            new_pieces = pieces[:]
+
+            if turn == 'white':
+                opponent_pieces = black_pieces[:]
+                opponent_locations = black_locations[:]
+                opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'black')
+
+                if move in opponent_locations:
+                    capture_index = opponent_locations.index(move)
+                    del opponent_pieces[capture_index]
+            else:
+                opponent_pieces = white_pieces[:]
+                opponent_locations = white_locations[:]
+                opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'white')
+
+                if move in opponent_locations:
+                    capture_index = opponent_locations.index(move)
+                    del opponent_pieces[capture_index]
+
+            simulated_piece = new_pieces[i]
+            if simulated_piece == 'pawn':
+                if (turn == 'white' and new_locations[i][1] == 7) or (turn == 'black' and new_locations[i][1] == 0):
+                    new_pieces[i] = 'queen'
+            
+            score = evaluate(new_pieces, new_locations, opponent_pieces, opponent_options)
+
+            if best_score is None or (turn == 'white' and score > best_score) or (turn == 'black' and score < best_score):
+                best_score = score
+                best_moves = [(i, move)]
+            elif score == best_score:
+                best_moves.append((i, move))
+
+    if best_moves:
+        selected_move = random.choice(best_moves)
+        return selected_move
+    else:
+        return None, None
+
+def evaluate(pieces, locations, opponent_pieces, opponent_options):
+    piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.2, 'rook' : 5, 'queen' : 9, 'king': 0}
+
+    score = 0
+    for piece in pieces:
+        score += piece_values[piece]
+    
+    opponent_score = 0
+    for piece in opponent_pieces:
+        opponent_score += piece_values[piece]
+
+    for location_index, location in enumerate(locations):
+        for option in opponent_options:
+            if location in option:
+                piece = pieces[location_index]
+                score -= piece_values[piece] * 0.6
+                break
+    
+    return score - opponent_score
+
 black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
 white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
+
 run = True
 
 while player_select:
@@ -150,7 +333,6 @@ while run:
     draw_board(screen, WIDTH, HEIGHT, turn_step, big_font, turn_prompt, white_promote, black_promote)
     draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection)
     draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen)
-    in_check = draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter) # draws check and also returns if in check
 
     if not game_over:
         white_promote, black_promote, promo_index = check_promotion(white_pieces, black_pieces, white_locations, black_locations)
@@ -240,6 +422,17 @@ while run:
                         turn_step = 2
                         selection = 100
                         valid_moves = []
+                        in_check = draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter) # draws check and also returns if in check
+
+
+                    if turn_step == 0:
+                        if in_check and all(len(m) == 0 for m in white_options):
+                            winner = 'Black'
+                            game_over = True
+                    elif turn_step == 2:
+                        if in_check and all(len(m) == 0 for m in black_options):
+                            winner = 'White'
+                            game_over = True
 
             # black move
             if turn_step > 1 and human_player_black:
@@ -304,12 +497,30 @@ while run:
 
                             turn_moved = True
 
-                if turn_moved:
-                    black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
-                    white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
-                    turn_step = 0
-                    selection = 100
-                    valid_moves = []
+
+            if not game_over:
+                white_promote, black_promote, promo_index = check_promotion(white_pieces, black_pieces, white_locations, black_locations)
+                if white_promote or black_promote:
+                    draw_promotion(screen, white_promote, black_promote, white_promotions, black_promotions, piece_list, white_images, black_images)
+                    check_promotion_select(white_promote, black_promote, promo_index, white_pieces, black_pieces, white_promotions, black_promotions)
+                    
+            if turn_moved:
+                black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
+                white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
+                turn_step = 0
+                selection = 100
+                valid_moves = []
+                in_check = draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter) # draws check and also returns if in check
+
+
+            if turn_step == 0:
+                if in_check and all(len(m) == 0 for m in white_options):
+                    winner = 'Black'
+                    game_over = True
+            elif turn_step == 2:
+                if in_check and all(len(m) == 0 for m in black_options):
+                    winner = 'White'
+                    game_over = True
 
     #AI
     if not human_player_white and turn_step < 2 and not game_over:
@@ -328,7 +539,7 @@ while run:
 
             #2) pick a piece to move form the valid list
             if possible_moves:
-                selection, ai_move = possible_moves[random.randint(0, len(possible_moves) - 1)]
+                selection, ai_move = chess_ai_greedy_algorithm(white_pieces, white_locations, 'white', white_options, white_pieces, black_pieces, white_locations, black_locations)
                 selected_piece = white_pieces[selection]
                 #3) Make the move
                 start_y = white_locations[selection][1]
@@ -398,6 +609,17 @@ while run:
                 selection = 100
                 valid_moves = []
                 ai_waiting = False
+                in_check = draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter) # draws check and also returns if in check
+
+
+            if turn_step == 0:
+                if in_check and all(len(m) == 0 for m in white_options):
+                    winner = 'Black'
+                    game_over = True
+            elif turn_step == 2:
+                if in_check and all(len(m) == 0 for m in black_options):
+                    winner = 'White'
+                    game_over = True
 
     if event.type == pygame.KEYDOWN and game_over: 
         # reset all parts
