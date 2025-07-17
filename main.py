@@ -4,6 +4,7 @@ from checkvalidmoves import *
 from chessengine import *
 import random
 import time
+import copy
 
 pygame.init()
 # Declaring global varables for board setup
@@ -25,7 +26,6 @@ ai_delay = 0.1
 ai_waiting = False
 ai_start_time = 0
 play_with_minimax = False
-piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.19, 'rook' : 5, 'queen' : 9, 'king': 0}
 pygame.display.set_caption('Chess in Python')
 
 
@@ -228,9 +228,11 @@ def check_options(pieces, locations, turn):
 
 #Greedy algorithm that moves based on material and a greedy capture heuristic
 def chess_ai_greedy_algorithm(pieces, locations, turn, options, white_pieces, black_pieces, white_locations, black_locations):
+    piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.2, 'rook' : 5, 'queen' : 9, 'king': 200}
     best_score = None
     best_moves = []
     piece_index = None
+    captured_value = 0
     
     #Simulate a move
     for i in range(len(pieces)):
@@ -262,14 +264,15 @@ def chess_ai_greedy_algorithm(pieces, locations, turn, options, white_pieces, bl
                     del opponent_pieces[capture_index]
                     del opponent_locations[capture_index]
                     opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'white')
-                    
+
             simulated_piece = new_pieces[i]
             if simulated_piece == 'pawn':
                 if (turn == 'white' and new_locations[i][1] == 7) or (turn == 'black' and new_locations[i][1] == 0):
                     new_pieces[i] = 'queen'
             
-            score = evaluate_greedy(new_pieces, new_locations, opponent_pieces, opponent_options)
+            score = evaluate_greedy(new_pieces, new_locations, opponent_pieces, opponent_options, captured_value)
 
+            print("Best Score: ", best_score)
             if best_score is None or (turn == 'white' and score > best_score) or (turn == 'black' and score < best_score):
                 best_score = score
                 best_moves = [(i, move)]
@@ -283,8 +286,8 @@ def chess_ai_greedy_algorithm(pieces, locations, turn, options, white_pieces, bl
         return None, None
 
 #evaluator for greedy algorithm
-def evaluate_greedy(pieces, locations, opponent_pieces, opponent_options):
-    piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.2, 'rook' : 5, 'queen' : 9, 'king': 0}
+def evaluate_greedy(pieces, locations, opponent_pieces, opponent_options, captured_value=0):
+    piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.2, 'rook' : 5, 'queen' : 9, 'king': 200}
     score = 0
     opponent_score = 0
 
@@ -310,140 +313,243 @@ def evaluate_greedy(pieces, locations, opponent_pieces, opponent_options):
                         score -= piece_value * (random.uniform(0.5, 1.5))
                     break
     
+    score += captured_value * 1.1
+
     return score - opponent_score
 
-def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, black_pieces, white_locations, black_locations, maximizing_player, alpha=float('-inf'), beta=float('inf')):
-    captured_value = 0
-
+def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, black_pieces, white_locations, black_locations, ai_is_white, maximizing_player, alpha=float('-inf'), beta=float('inf')):
+    piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.2, 'rook' : 5, 'queen' : 9, 'king': 200}
+    
     if depth == 0:
         if turn == 'white':
             opponent_pieces = black_pieces
             opponent_locations = black_locations
-            opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'black')
+            opponent_color = 'black'
         else:
             opponent_pieces = white_pieces
             opponent_locations = white_locations
-            opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'white')
+            opponent_color = 'white'
         
-        return evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, captured_value), None
-    
-    best_move = None
+        opponent_options, _ = check_options(opponent_pieces, opponent_locations, opponent_color)
+        evaluation_score = evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is_white)
 
+        #print("BASE CASE EVALUATION SCORE: ", evaluation_score)
+        return evaluation_score, None
+    
     if maximizing_player:
         best_score = float('-inf')
     else:
-        best_score = float('inf')      
+        best_score = float('inf')
+    best_move = None
 
+    assert best_score == float('-inf') if maximizing_player else float('inf'), "best_score initialized incorrectly"
+
+    for i in range(len(pieces)):
+        print(f"\n==== Checking moves for piece index {i} ({pieces[i]} at {locations[i]}) ====")
+        for move in options[i]:
+            new_pieces = copy.deepcopy(pieces)
+            new_locations = copy.deepcopy(locations)
+            new_locations[i] = move
+
+            if new_pieces[i] == 'pawn':
+                if (turn == 'white' and move[1] == 7) or (turn =='black' and move[1] == 0):
+                    new_pieces[i] = 'queen'
+
+            if turn == 'white':
+                next_turn = 'black'
+                next_white_pieces = copy.deepcopy(new_pieces)
+                next_white_locations = copy.deepcopy(new_locations)
+                next_black_pieces = copy.deepcopy(black_pieces)
+                next_black_locations = copy.deepcopy(black_locations)
+
+                if move in next_black_locations:
+                    capture_index = next_black_locations.index(move)
+                    del next_black_pieces[capture_index]
+                    del next_black_locations[capture_index]
+            else:
+                next_turn = 'white'
+                next_black_pieces = new_pieces
+                next_black_locations = new_locations
+                next_white_pieces = copy.deepcopy(white_pieces)
+                next_white_locations = copy.deepcopy(white_locations)
+                
+                if move in next_white_locations:
+                    capture_index = next_white_locations.index(move)
+                    del next_white_pieces[capture_index]
+                    del next_white_locations[capture_index]
+
+            next_options, _ = check_options(next_white_pieces if next_turn == 'white' else next_black_pieces, next_white_locations if next_turn == 'white' else next_black_locations, next_turn)
+            score, _ = minimax_ai_algorithm(next_white_pieces if next_turn == 'white' else next_black_pieces, next_white_locations if next_turn == 'white' else next_black_locations, next_turn, next_options, depth - 1, next_white_pieces, next_black_pieces, next_white_locations, next_black_locations, ai_is_white, not maximizing_player, alpha=alpha, beta=beta)
+            
+
+            print()
+            print("Before")
+            print("score: ", score)
+            print("best score: ", best_score)
+            print(f"\nBefore comparing: score = {score}, best_score = {best_score}, maximizing = {maximizing_player}")
+
+
+            if maximizing_player:
+                if score > best_score:
+                    print(f"Updating best_score: {score} > {best_score}")
+                    best_score = score
+                    best_move = (i, move)
+                alpha = max(alpha, best_score)
+                if beta <= alpha:
+                    return best_score, best_move
+            else:
+                if score < best_score:
+                    print(f"Updating best_score: {score} < {best_score}")
+                    best_score = score
+                    best_move = (i, move)
+                beta = min(beta, best_score)
+                if beta <= alpha:
+                    return best_score, best_move
+
+            print()
+            print("AFTER")
+            print("score: ", score)
+            print("best score: ", best_score)
+            print(f"After comparing: best_score = {best_score}, best_move = {best_move}")
+        
+        if depth == 2:
+            print(f"RETURNING FINAL MOVE: {best_move} with score: {best_score}", maximizing_player and True)
+    
+    return best_score, best_move
+    
+def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is_white):
+        piece_values = {'pawn': 1, 'knight': 3, 'bishop': 3, 'rook': 5, 'queen': 9, 'king': 200}
+        center_squares = {(3, 3), (3, 4), (4, 3), (4, 4)}
+        white_bishop_start = {(2, 0), (5, 0)}
+        white_score = 0
+        black_score = 0
+
+        for index, location in enumerate(locations):
+            piece = pieces[index]
+            if location in center_squares:
+                if piece == 'pawn':
+                    white_score += 0.3
+                elif piece == 'knight':
+                    white_score += 0.8
+                elif piece == 'bishop' and (location not in white_bishop_start):
+                    white_score += 0.5
+
+            if piece == 'king':
+                if ai_is_white:
+                    if white_score < 20:
+                        white_score += 0.5
+                    else:
+                        if location in [(3,0), (4,0), (5,0)]:
+                            white_score -= 0.5
+
+        for location_index, location in enumerate(locations):
+            piece = pieces[location_index]
+            piece_value = piece_values[piece]
+
+            for option_index, option_list in enumerate(opponent_options):
+                for move in option_list:
+                    if location == move:
+                        opponent_piece = opponent_pieces[option_index]
+                        opponent_value = piece_values[opponent_piece]
+
+                        if piece_value > opponent_value:
+                            white_score -= (piece_value - opponent_value) * 1.5
+                        else:
+                            white_score -= piece_value * 1.2
+                        break
+
+        for option_index, move_list in enumerate(opponent_options):
+            for move in move_list:
+                if move in locations:
+                    target_index = locations.index(move)
+                    attacker_piece = opponent_pieces[option_index]
+                    target_piece = pieces[target_index]
+                    attacker_value = piece_values[attacker_piece]
+                    target_value = piece_values[target_piece]
+
+                    trade_balance = target_value - attacker_value
+                    white_score += trade_balance * 0.5
+
+        for piece in pieces:
+            white_score += piece_values[piece]
+        
+        for piece in opponent_pieces:
+            black_score += piece_values[piece]
+
+        if ai_is_white:
+            return white_score - black_score
+        else:
+            return black_score - white_score
+
+'''def negamax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, black_pieces, white_locations, black_locations, color):
+    piece_values = {'pawn': 1, 'knight': 3, 'bishop': 3, 'rook': 5, 'queen': 9, 'king': 200}
+
+    if depth == 0:
+        if color == 1:
+            opponent_pieces = black_pieces
+            opponent_locations = black_locations
+            opponent_color = 'black'
+            opponent_options, _ = check_options(opponent_pieces, opponent_locations, opponent_color)
+        else:
+            opponent_pieces = white_pieces
+            opponent_locations = white_locations
+            opponent_color = 'white'
+            opponent_options, _ = check_options(opponent_pieces, opponent_locations, opponent_color)
+        return color * evaluate_minimax(pieces, locations, opponent_pieces, opponent_options), None
+    
+    best_score = float('-inf')
     best_move = None
 
     for i in range(len(pieces)):
         for move in options[i]:
-            new_locations = locations[:]
-            new_locations[i] = move
+            piece_index = i  # store original index
             new_pieces = pieces[:]
-
-            if new_pieces[i] == 'pawn':
-                if (turn == 'white' and new_locations[i][1] == 7) or (turn == 'black' and new_locations[i][1] == 0):
-                    new_pieces[i] = 'queen'
+            new_locations = locations[:]
+            new_locations[piece_index] = move
+            piece_type = new_pieces[piece_index]
 
             if turn == 'white':
-                opponent_pieces = black_pieces[:]
-                opponent_locations = black_locations[:]
-                captured_value = 0
-                if move in opponent_locations:
-                    capture_index = opponent_locations.index(move)
-                    captured_piece = opponent_pieces[capture_index]
-                    captured_value = piece_values[captured_piece]
-                    del opponent_pieces[capture_index]
-                    del opponent_locations[capture_index]
-                opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'black')
-                next_turn = 'black'
-                next_pieces = new_pieces
-                next_locations = new_locations
-                next_options = opponent_options
-
+                new_white_pieces = new_pieces
+                new_white_locations = new_locations
+                new_black_pieces = black_pieces[:]
+                new_black_locations = black_locations[:]
+                opp_pieces = new_black_pieces
+                opp_locations = new_black_locations
             else:
-                opponent_pieces = white_pieces[:]
-                opponent_locations = white_locations[:]
-                if move in opponent_locations:
-                    capture_index = opponent_locations.index(move)
-                    del opponent_pieces[capture_index]
-                    del opponent_locations[capture_index]
-                opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'white')
-                next_turn = 'white'
-                next_pieces = new_pieces
-                next_locations = new_locations
-                next_options = opponent_options
+                new_black_pieces = new_pieces
+                new_black_locations = new_locations
+                new_white_pieces = white_pieces[:]
+                new_white_locations = white_locations[:]
+                opp_pieces = new_white_pieces
+                opp_locations = new_white_locations
 
+            if move in opp_locations:
+                capture_index = opp_locations.index(move)
+                del opp_pieces[capture_index]
+                del opp_locations[capture_index]
+                for j in range(len(new_locations)):
+                    if j != piece_index and new_locations[j] == move:
+                        del new_pieces[j]
+                        del new_locations[j]
+                        break
 
-            recomputed_options, _ = check_options(next_pieces, next_locations, next_turn)
-            score, _ = minimax_ai_algorithm(next_pieces, next_locations, next_turn, recomputed_options, depth - 1, white_pieces, black_pieces, white_locations, black_locations, not maximizing_player, alpha, beta)
+            # Promotion
+            if piece_type == 'pawn':
+                if (turn == 'white' and move[1] == 7) or (turn == 'black' and move[1] == 0):
+                    piece_type = 'queen'
 
-            if maximizing_player:
-                if score > best_score:
-                    best_score = score
-                    best_move = (i, move)
-                alpha = max(alpha, best_score)
-            else:
-                if score < best_score:
-                    best_score = score
-                    best_move = (i, move)
-                beta = min(beta, best_score)
+            next_turn = 'black' if turn == 'white' else 'white'
+            next_options, _ = check_options(new_pieces, new_locations, next_turn)
 
-            print(f"Evaluating move: {move}, score: {score}, alpha: {alpha}, beta: {beta}")
+            score, _ = negamax_ai_algorithm(new_pieces, new_locations, next_turn, next_options, depth - 1, new_white_pieces, new_black_pieces, new_white_locations, new_black_locations, -color)
 
-            if beta <= alpha:
-                print(f"Pruning branch at move: {move}")
-                break
+            score = -score  # Negamax step
 
-    if best_move:
-        return best_score, (int(best_move[0]), best_move[1])
-    else:
-        return best_score, (None, None)
-    
-def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, captured_value = 0):
-    score = 0
-    opponent_score = 0
-    capture_bonus = 0
+            if score > best_score:
+                best_score = score
+                best_move = (i, move)
 
-    pieces_with_locations = list(zip(pieces, locations))
-    random.shuffle(pieces_with_locations)
-
-    for piece, location in pieces_with_locations:
-        value = piece_values[piece]
-        x, y = location
-        score += value
-
-        if piece == 'knight' and location not in [(1, 0), (6, 0), (1, 7), (6, 7)]:
-            score += 1.5
-        if piece == 'bishop' and location not in [(2, 0), (5, 0), (2, 7), (5, 7)]:
-            score += 0.8
-
-        if piece == 'king':
-            if location not in [(2, 0), (6, 0), (2, 7), (6, 7)]:
-                score -= 100
-
-
-    for piece in opponent_pieces:
-        opponent_score += piece_values[piece]
-
-    # Slight penalty if own piece is under attack
-    for location_index, location in enumerate(locations):
-        piece = pieces[location_index]
-        piece_value = piece_values[piece]
-
-        for option_list in opponent_options:
-            if location in option_list:
-                score -= piece_value * 0.5
-
-                if location in opponent_options[0]:
-                    capture_bonus = piece_values[opponent_pieces[opponent_options[0].index(location)]] * 100
-                break
-    
-    score += capture_bonus * 2.0
-    score += captured_value * 1.5
-
-    return score - opponent_score
+    return best_score, best_move '''
 
 black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
 white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
@@ -458,7 +564,15 @@ while player_select:
         box_x = (WIDTH - box_width) // 2
         box_y = (HEIGHT - box_height) // 2
         pygame.draw.rect(screen, (50, 200, 50), [box_x, box_y, box_width, box_height])
-        screen.blit(font.render('Press 1 to play against a human, 2 to play against a beginner AI, or any other key to play against AI!', True, 'black'), (245 + (600 - box_width) // 2, 440 + (150 - box_height) // 2))
+        text = 'Press 1 to play against a human,\n2 to play against a beginner AI,\nor any other key to play against AI!'
+
+        x_position = 245 + (600 - box_width) // 2
+        y_position = 440 + (150 - box_height) // 2
+
+        text_lines = text.split('\n')
+
+        for i, line in enumerate(text_lines):
+            screen.blit(font.render(line, True, 'black'), (x_position + 115, y_position + i * 17)) 
 
         pygame.display.flip()
 
@@ -698,9 +812,8 @@ while run:
             #2) pick a piece to move form the valid list
             if possible_moves:
                 if play_with_minimax: 
-                    _, best_move = minimax_ai_algorithm(white_pieces, white_locations, 'white', white_options, 2, white_pieces, black_pieces, white_locations, black_locations, True, alpha=float('-inf'), beta=float('inf'))
+                    _, best_move = minimax_ai_algorithm(white_pieces, white_locations, 'white', white_options, 2, white_pieces, black_pieces, white_locations, black_locations, True, maximizing_player=True)
                     if best_move is None or best_move[0] is None or best_move[1] is None:
-                        print("No move returned by AI. Skipping turn.")
                         ai_waiting = False
                         continue
                     selection, ai_move = best_move
