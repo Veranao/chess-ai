@@ -21,9 +21,11 @@ player_select = True
 human_player_white = False
 human_player_black = True
 turn_moved = False
-ai_delay = 0.4
+ai_delay = 0.1
 ai_waiting = False
 ai_start_time = 0
+play_with_minimax = False
+piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.19, 'rook' : 5, 'queen' : 9, 'king': 0}
 pygame.display.set_caption('Chess in Python')
 
 
@@ -89,6 +91,7 @@ def check_options(pieces, locations, turn):
     moves_list = []
     all_moves_list = []
     castling_moves = []
+    king_pos = None
 
     for i in range(len(pieces)):
         location = locations[i]
@@ -134,7 +137,6 @@ def check_options(pieces, locations, turn):
                         enemy_moves, _ = check_king(enemy_location, 'black', white_pieces, black_pieces, white_locations, black_locations, white_moved, black_moved, white_options, black_options)
 
                     all_enemy_moves.extend(enemy_moves)
-                    print(f"{enemy_piece} at {enemy_location} can move to: {enemy_moves}")
             else:
                 enemy_pieces = white_pieces[:]
                 enemy_locations = white_locations[:]
@@ -215,16 +217,16 @@ def check_options(pieces, locations, turn):
                         king_pos = temp_locations[j]
                         break
 
-                if king_pos not in simulated_enemy_moves:
+                if king_pos is None or  king_pos not in simulated_enemy_moves:
                     legal_moves.append(move)
 
-            print("Current legal moves for this piece:", legal_moves)
+            #print("Current legal moves for this piece:", legal_moves)
 
         all_moves_list.append(legal_moves)
 
     return all_moves_list, castling_moves
 
-#Greedy Algorithm that moves based on material and a greedy capture heuristic
+#Greedy algorithm that moves based on material and a greedy capture heuristic
 def chess_ai_greedy_algorithm(pieces, locations, turn, options, white_pieces, black_pieces, white_locations, black_locations):
     best_score = None
     best_moves = []
@@ -244,7 +246,10 @@ def chess_ai_greedy_algorithm(pieces, locations, turn, options, white_pieces, bl
 
                 if move in opponent_locations:
                     capture_index = opponent_locations.index(move)
+                    captured_piece = opponent_pieces[capture_index]
+                    captured_value = piece_values[captured_piece]
                     del opponent_pieces[capture_index]
+                    del opponent_locations[capture_index]
             else:
                 opponent_pieces = white_pieces[:]
                 opponent_locations = white_locations[:]
@@ -252,14 +257,18 @@ def chess_ai_greedy_algorithm(pieces, locations, turn, options, white_pieces, bl
 
                 if move in opponent_locations:
                     capture_index = opponent_locations.index(move)
+                    captured_piece = opponent_pieces[capture_index]
+                    captured_value = piece_values[captured_piece]
                     del opponent_pieces[capture_index]
-
+                    del opponent_locations[capture_index]
+                    opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'white')
+                    
             simulated_piece = new_pieces[i]
             if simulated_piece == 'pawn':
                 if (turn == 'white' and new_locations[i][1] == 7) or (turn == 'black' and new_locations[i][1] == 0):
                     new_pieces[i] = 'queen'
             
-            score = evaluate(new_pieces, new_locations, opponent_pieces, opponent_options)
+            score = evaluate_greedy(new_pieces, new_locations, opponent_pieces, opponent_options)
 
             if best_score is None or (turn == 'white' and score > best_score) or (turn == 'black' and score < best_score):
                 best_score = score
@@ -273,24 +282,167 @@ def chess_ai_greedy_algorithm(pieces, locations, turn, options, white_pieces, bl
     else:
         return None, None
 
-def evaluate(pieces, locations, opponent_pieces, opponent_options):
+#evaluator for greedy algorithm
+def evaluate_greedy(pieces, locations, opponent_pieces, opponent_options):
     piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.2, 'rook' : 5, 'queen' : 9, 'king': 0}
-
     score = 0
+    opponent_score = 0
+
     for piece in pieces:
         score += piece_values[piece]
     
-    opponent_score = 0
     for piece in opponent_pieces:
         opponent_score += piece_values[piece]
 
     for location_index, location in enumerate(locations):
-        for option in opponent_options:
-            if location in option:
-                piece = pieces[location_index]
-                score -= piece_values[piece] * 0.6
+        piece = pieces[location_index]
+        piece_value = piece_values[piece]
+
+        for option_index , option_list in enumerate(opponent_options):
+            for move in option_list:
+                if location == move:
+                    opponent_piece = opponent_pieces[option_index]
+                    opponent_value = piece_values[opponent_piece]
+                
+                    if piece_value > opponent_value:
+                        score -= (piece_value - opponent_value) * (random.uniform(0.9, 2.0))
+                    else:
+                        score -= piece_value * (random.uniform(0.5, 1.5))
+                    break
+    
+    return score - opponent_score
+
+def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, black_pieces, white_locations, black_locations, maximizing_player, alpha=float('-inf'), beta=float('inf')):
+    captured_value = 0
+
+    if depth == 0:
+        if turn == 'white':
+            opponent_pieces = black_pieces
+            opponent_locations = black_locations
+            opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'black')
+        else:
+            opponent_pieces = white_pieces
+            opponent_locations = white_locations
+            opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'white')
+        
+        return evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, captured_value), None
+    
+    best_move = None
+
+    if maximizing_player:
+        best_score = float('-inf')
+    else:
+        best_score = float('inf')      
+
+    best_move = None
+
+    for i in range(len(pieces)):
+        for move in options[i]:
+            new_locations = locations[:]
+            new_locations[i] = move
+            new_pieces = pieces[:]
+
+            if new_pieces[i] == 'pawn':
+                if (turn == 'white' and new_locations[i][1] == 7) or (turn == 'black' and new_locations[i][1] == 0):
+                    new_pieces[i] = 'queen'
+
+            if turn == 'white':
+                opponent_pieces = black_pieces[:]
+                opponent_locations = black_locations[:]
+                captured_value = 0
+                if move in opponent_locations:
+                    capture_index = opponent_locations.index(move)
+                    captured_piece = opponent_pieces[capture_index]
+                    captured_value = piece_values[captured_piece]
+                    del opponent_pieces[capture_index]
+                    del opponent_locations[capture_index]
+                opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'black')
+                next_turn = 'black'
+                next_pieces = new_pieces
+                next_locations = new_locations
+                next_options = opponent_options
+
+            else:
+                opponent_pieces = white_pieces[:]
+                opponent_locations = white_locations[:]
+                if move in opponent_locations:
+                    capture_index = opponent_locations.index(move)
+                    del opponent_pieces[capture_index]
+                    del opponent_locations[capture_index]
+                opponent_options, _ = check_options(opponent_pieces, opponent_locations, 'white')
+                next_turn = 'white'
+                next_pieces = new_pieces
+                next_locations = new_locations
+                next_options = opponent_options
+
+
+            recomputed_options, _ = check_options(next_pieces, next_locations, next_turn)
+            score, _ = minimax_ai_algorithm(next_pieces, next_locations, next_turn, recomputed_options, depth - 1, white_pieces, black_pieces, white_locations, black_locations, not maximizing_player, alpha, beta)
+
+            if maximizing_player:
+                if score > best_score:
+                    best_score = score
+                    best_move = (i, move)
+                alpha = max(alpha, best_score)
+            else:
+                if score < best_score:
+                    best_score = score
+                    best_move = (i, move)
+                beta = min(beta, best_score)
+
+            print(f"Evaluating move: {move}, score: {score}, alpha: {alpha}, beta: {beta}")
+
+            if beta <= alpha:
+                print(f"Pruning branch at move: {move}")
+                break
+
+    if best_move:
+        return best_score, (int(best_move[0]), best_move[1])
+    else:
+        return best_score, (None, None)
+    
+def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, captured_value = 0):
+    score = 0
+    opponent_score = 0
+    capture_bonus = 0
+
+    pieces_with_locations = list(zip(pieces, locations))
+    random.shuffle(pieces_with_locations)
+
+    for piece, location in pieces_with_locations:
+        value = piece_values[piece]
+        x, y = location
+        score += value
+
+        if piece == 'knight' and location not in [(1, 0), (6, 0), (1, 7), (6, 7)]:
+            score += 1.5
+        if piece == 'bishop' and location not in [(2, 0), (5, 0), (2, 7), (5, 7)]:
+            score += 0.8
+
+        if piece == 'king':
+            if location not in [(2, 0), (6, 0), (2, 7), (6, 7)]:
+                score -= 100
+
+
+    for piece in opponent_pieces:
+        opponent_score += piece_values[piece]
+
+    # Slight penalty if own piece is under attack
+    for location_index, location in enumerate(locations):
+        piece = pieces[location_index]
+        piece_value = piece_values[piece]
+
+        for option_list in opponent_options:
+            if location in option_list:
+                score -= piece_value * 0.5
+
+                if location in opponent_options[0]:
+                    capture_bonus = piece_values[opponent_pieces[opponent_options[0].index(location)]] * 100
                 break
     
+    score += capture_bonus * 2.0
+    score += captured_value * 1.5
+
     return score - opponent_score
 
 black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
@@ -306,8 +458,7 @@ while player_select:
         box_x = (WIDTH - box_width) // 2
         box_y = (HEIGHT - box_height) // 2
         pygame.draw.rect(screen, (50, 200, 50), [box_x, box_y, box_width, box_height])
-        screen.blit(font.render('Press 1 to play against a human or any other key to play against AI!', True, 'black'), (245 + (600 - box_width) // 2, 440 + (150 - box_height) // 2))
-
+        screen.blit(font.render('Press 1 to play against a human, 2 to play against a beginner AI, or any other key to play against AI!', True, 'black'), (245 + (600 - box_width) // 2, 440 + (150 - box_height) // 2))
 
         pygame.display.flip()
 
@@ -320,6 +471,13 @@ while player_select:
                 if event.key == pygame.K_1:
                     human_player_white = True
                     human_player_black = True
+                elif event.key == pygame.K_2:
+                    human_player_white = False
+                    human_player_black = True
+                else:
+                    human_player_white = False
+                    human_player_black = True
+                    play_with_minimax = True
 
                 player_select = False
 
@@ -523,7 +681,7 @@ while run:
                     game_over = True
 
     #AI
-    if not human_player_white and turn_step < 2 and not game_over:
+    if not human_player_white and turn_step < 2 and not game_over and human_player_black:
         if not ai_waiting:
             ai_start_time = time.time()
             ai_waiting = True
@@ -539,15 +697,48 @@ while run:
 
             #2) pick a piece to move form the valid list
             if possible_moves:
-                selection, ai_move = chess_ai_greedy_algorithm(white_pieces, white_locations, 'white', white_options, white_pieces, black_pieces, white_locations, black_locations)
+                if play_with_minimax: 
+                    _, best_move = minimax_ai_algorithm(white_pieces, white_locations, 'white', white_options, 2, white_pieces, black_pieces, white_locations, black_locations, True, alpha=float('-inf'), beta=float('inf'))
+                    if best_move is None or best_move[0] is None or best_move[1] is None:
+                        print("No move returned by AI. Skipping turn.")
+                        ai_waiting = False
+                        continue
+                    selection, ai_move = best_move
+                    selection = int(selection)
+                else:
+                    selection, ai_move = chess_ai_greedy_algorithm(white_pieces, white_locations, 'white', white_options, white_pieces, black_pieces, white_locations, black_locations)
+                    selection = int(selection)
                 selected_piece = white_pieces[selection]
                 #3) Make the move
                 start_y = white_locations[selection][1]
                 white_locations[selection] = ai_move
                 white_moved[selection] = True
 
-                if white_pieces[selection] == 'pawn' and ai_move[1] == 7:
-                    white_pieces[selection] = random.choices(['queen', 'knight', 'bishop', 'rook'], weights=[8, 1, 1, 1], k=1)[0]
+                if selected_piece == 'king':
+                    for q in range(len(white_castle_options)):
+                        if ai_move == white_castle_options[q][0]:
+                            white_locations[selection] = ai_move
+                            white_moved[selection] = True
+
+                            if ai_move == (1, 0): 
+                                rook_coords = (0, 0)
+                            else:
+                                rook_coords = (7, 0)
+                            
+                            rook_index = white_locations.index(rook_coords)
+                            white_locations[rook_index] = white_castle_options[q][1]
+                            break
+
+
+                
+                if white_pieces[selection] == 'pawn' and ai_move == en_passant_target:
+                        captured_white_pieces.append('pawn')
+                        captured_pos = (ai_move[0], start_y)
+                        if captured_pos in black_locations:
+                            black_index = black_locations.index(captured_pos)
+                            black_pieces.pop(black_index)
+                            black_locations.pop(black_index)
+                            black_moved.pop(black_index)
 
                 if ai_move in black_locations:
                     black_piece = black_locations.index(ai_move)
@@ -557,48 +748,18 @@ while run:
                     black_pieces.pop(black_piece)
                     black_locations.pop(black_piece)
                     black_moved.pop(black_piece)
+                
+                if white_pieces[selection] == 'pawn' and ai_move[1] == 7:
+                    white_pieces[selection] = random.choices(['queen', 'knight', 'bishop', 'rook'], weights=[8, 1, 1, 1], k=1)[0]
 
-                    if white_pieces[selection] == 'pawn' and ai_move == en_passant_target:
-                            captured_white_pieces.append('pawn')
-                            captured_pos = (ai_move[0], start_y)
-                            if captured_pos in black_locations:
-                                black_index = black_locations.index(captured_pos)
-                                black_pieces.pop(black_index)
-                                black_locations.pop(black_index)
-                                black_moved.pop(black_index)
-
-                    if white_pieces[selection] == 'pawn':
-                            if abs(ai_move[1] - start_y) == 2:
-                                en_passant_target = (ai_move[0], ai_move[1] - 1)
-                            else:
-                                en_passant_target = None
-                    else:
-                        en_passant_target = None
-                    
-                    if ai_move in black_locations:
-                        black_piece = black_locations.index(ai_move)
-                        captured_white_pieces.append(black_pieces[black_piece])
-                        if (black_pieces[black_piece] == 'king'):
-                            winner = 'White'
-                        black_pieces.pop(black_piece)
-                        black_locations.pop(black_piece)
-                        black_moved.pop(black_piece)
-
-                    turn_moved = True
-
-                elif selection != 100 and selected_piece == 'king':
-                    for q in range(len(black_castle_options)):
-                        if ai_move == black_castle_options[q][0]:
-                            black_locations[selection] = ai_move
-                            black_moved[selection] = True
-
-                            if ai_move == (1, 7): 
-                                rook_coords = (0, 7)
-                            else:
-                                rook_coords = (7, 7)
-                            
-                            rook_index = black_locations.index(rook_coords)
-                            black_locations[rook_index] = black_castle_options[q][1]
+                
+                if white_pieces[selection] == 'pawn':
+                        if abs(ai_move[1] - start_y) == 2:
+                            en_passant_target = (ai_move[0], ai_move[1] - 1)
+                        else:
+                            en_passant_target = None
+                else:
+                    en_passant_target = None
 
                 turn_moved = True
 
