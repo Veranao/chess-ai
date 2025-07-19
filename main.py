@@ -87,6 +87,7 @@ load_pieces("w", white_images, small_white_images, piece_list)
 
 turn_prompt = ['White: Select a piece to move!', 'White: Select where to go!', 'Black: Select a piece to move!', 'Black: Select where to go!']
 
+#Check potential moves for the AI or human player, including preventing illegal moves
 def check_options(pieces, locations, turn):
     moves_list = []
     all_moves_list = []
@@ -317,9 +318,11 @@ def evaluate_greedy(pieces, locations, opponent_pieces, opponent_options, captur
 
     return score - opponent_score
 
+#minimax algorithm
 def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, black_pieces, white_locations, black_locations, ai_is_white, maximizing_player, alpha=float('-inf'), beta=float('inf')):
     piece_values = {'pawn': 1, 'knight': 3, 'bishop' : 3.2, 'rook' : 5, 'queen' : 9, 'king': 200}
     
+    #base case
     if depth == 0:
         if turn == 'white':
             opponent_pieces = black_pieces
@@ -336,6 +339,7 @@ def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, 
         #print("BASE CASE EVALUATION SCORE: ", evaluation_score)
         return evaluation_score, None
     
+    #maximizing player = white
     if maximizing_player:
         best_score = float('-inf')
     else:
@@ -343,6 +347,7 @@ def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, 
     best_move = None
     assert best_score == float('-inf') if maximizing_player else float('inf'), "best_score initialized incorrectly"
 
+    #copy pieces and recursive step
     for i in range(len(pieces)):
         print(f"\n==== Checking moves for piece index {i} ({pieces[i]} at {locations[i]}) ====")
         for move in options[i]:
@@ -381,6 +386,7 @@ def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, 
             score, _ = minimax_ai_algorithm(next_white_pieces if next_turn == 'white' else next_black_pieces, next_white_locations if next_turn == 'white' else next_black_locations, next_turn, next_options, depth - 1, next_white_pieces, next_black_pieces, next_white_locations, next_black_locations, ai_is_white, not maximizing_player, alpha=alpha, beta=beta)
 
 
+            #evaluate and update best score and best move if it is evaluated to be better
             if maximizing_player:
                 if score > best_score:
                     print(f"Updating best_score: {score} > {best_score}")
@@ -388,6 +394,7 @@ def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, 
                     best_move = (i, move)
                 alpha = max(alpha, best_score)
                 if beta <= alpha:
+
                     return best_score, best_move
             else:
                 if score < best_score:
@@ -404,14 +411,15 @@ def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, 
             print(f"RETURNING FINAL MOVE: {best_move} with score: {best_score}", maximizing_player and True)
     
     return best_score, best_move
-    
+
+#evaluate function for minimax
 def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is_white):
         piece_values = {'pawn': 1, 'knight': 3, 'bishop': 3, 'rook': 5, 'queen': 9, 'king': 200}
         center_squares = {(3, 3), (3, 4), (4, 3), (4, 4)}
-        white_bishop_start = {(2, 0), (5, 0)}
         white_score = 0
         black_score = 0
 
+        #Encourage development to the center except for king
         for index, location in enumerate(locations):
             piece = pieces[index]
             if location in center_squares:
@@ -421,15 +429,10 @@ def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is
                     white_score += 0.3
                 elif piece == 'bishop':
                     white_score += 0.5
+                elif piece == 'king':
+                    white_score -= 1.0
 
-            if piece == 'king':
-                if ai_is_white:
-                    if white_score < 20:
-                        white_score += 0.5
-                    else:
-                        if location in [(3,0), (4,0), (5,0)]:
-                            white_score -= 0.5
-
+        #penalize scenarios where valuable pieces are vulnerable
         for location_index, location in enumerate(locations):
             piece = pieces[location_index]
             piece_value = piece_values[piece]
@@ -445,7 +448,8 @@ def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is
                         else:
                             white_score -= piece_value * 1.2
                         break
-
+        
+        #encourage trades 
         for option_index, move_list in enumerate(opponent_options):
             for move in move_list:
                 if move in locations:
@@ -458,7 +462,7 @@ def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is
                     trade_balance = target_value - attacker_value
                     white_score += trade_balance * 0.5
 
-        # rewards positiosn where the opponent has less options by either taking control of spaces away or outright encouraging captures (lowers options obviously)
+        # rewards position where the opponent has less options by either taking control of spaces away or outright encouraging captures (lowers options obviously)
         white_score -= len([move for moves in opponent_options for move in moves]) * 0.22
  
         for piece in pieces:
@@ -472,6 +476,7 @@ def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is
         else:
             return black_score - white_score
 
+#depricated negamax algorithm
 '''def negamax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, black_pieces, white_locations, black_locations, color):
     piece_values = {'pawn': 1, 'knight': 3, 'bishop': 3, 'rook': 5, 'queen': 9, 'king': 200}
 
@@ -547,9 +552,11 @@ white_options, white_castle_options = check_options(white_pieces, white_location
 
 run = True
 
+#setup game
 while player_select:
         screen.fill((0, 153, 0))
 
+        #select algo or human to play against. black is always human
         box_width = 600
         box_height = 150
         box_x = (WIDTH - box_width) // 2
@@ -585,7 +592,8 @@ while player_select:
                     play_with_minimax = True
 
                 player_select = False
-
+                
+#game loop
 while run:
     timer.tick(frames_per_second)
     screen.fill((153, 80, 0))

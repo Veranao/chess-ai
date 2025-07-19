@@ -1,7 +1,7 @@
 import pygame
 
 _CHESSPIECESPATH = "./images/chess-pieces-basic/"
-
+#images
 def load_pieces(side, image_arr, image_arr_small, piece_list):
     for image in piece_list:
         piece = pygame.image.load(_CHESSPIECESPATH + image + "-" + side + ".svg")
@@ -11,6 +11,7 @@ def load_pieces(side, image_arr, image_arr_small, piece_list):
         small_piece = pygame.transform.scale(piece, (150, 150))
         image_arr_small.append(small_piece)
 
+#draw the board
 def draw_board(screen, width, height, turn_step, big_font, turn_prompt, white_promote, black_promote):
     for i in range(32):
         row = i // 4
@@ -40,6 +41,7 @@ def draw_board(screen, width, height, turn_step, big_font, turn_prompt, white_pr
         screen.blit(big_font.render('Select piece that you want to promote pawn to', True, 'black'), (20, 820))
 
 
+#draw the pieces
 def draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_images, white_locations, black_locations, screen, turn_step, selection):
     for i in range(len(white_pieces)):
         index = piece_list.index(white_pieces[i])
@@ -58,14 +60,12 @@ def draw_pieces(piece_list, white_pieces, black_pieces, white_images, black_imag
             if selection == i:
                 pygame.draw.rect(screen, 'red', [black_locations[i][0] * 100 + 1, black_locations[i][1] * 100 + 1, 100, 100], 3)
 
+#show all valid moves for piece
 def draw_valid(moves, turn_step, screen):
     for i in range(len(moves)):
         pygame.draw.circle(screen, 'red', (moves[i][0] * 100 + 50, moves[i][1] * 100 + 50), 5)
 
-def check_castling():
-    pass
-
-
+#castling dots
 def draw_castling(turn_step, white_castle_moves, black_castle_moves, screen, font):
     if turn_step < 2:
         moves = white_castle_moves
@@ -77,6 +77,7 @@ def draw_castling(turn_step, white_castle_moves, black_castle_moves, screen, fon
         screen.blit(font.render('king', True, 'black'), (moves[i][0][0] * 100 + 30, moves[i][0][1] * 100 + 70))
         screen.blit(font.render('rook', True, 'black'), (moves[i][1][0] * 100 + 30, moves[i][1][1] * 100 + 70))
 
+#captured pieces on the side
 def draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen):
     
     for i in range(len(captured_white_pieces)):
@@ -89,6 +90,7 @@ def draw_captured(captured_white_pieces, captured_black_pieces, small_white_imag
         index = piece_list.index(captured_piece)
         screen.blit(small_white_images[index], (925, 5 + 50 * i))
 
+#red box for checks
 def draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter):
     checked = False
     if turn_step < 2:
@@ -113,7 +115,8 @@ def draw_check(turn_step, white_pieces, black_pieces, white_locations, black_loc
                                                                black_locations[king_index][1] * 100 + 1, 100, 100], 5)
     
     return checked
-                        
+
+#UI for promotion           
 def draw_promotion(screen, white_promote, black_promote, white_promotions, black_promotions, piece_list, white_images, black_images):
     pygame.draw.rect(screen, 'light gray', [800, 0, 200, 450])
     if white_promote:
@@ -132,6 +135,7 @@ def draw_promotion(screen, white_promote, black_promote, white_promotions, black
     pygame.draw.rect(screen, color, [800, 0, 200, 450], 8)
 
 
+#UI for gameover
 def draw_game_over(screen, font, winner):
     pygame.draw.rect(screen, 'white', [200, 200, 500, 200])
     screen.blit(font.render(f'{winner} won the game!', True, 'black'), (210, 210))

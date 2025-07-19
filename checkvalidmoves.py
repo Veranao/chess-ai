@@ -1,5 +1,6 @@
 import pygame
 
+#turn checker to fetch options list for currently playing color
 def check_valid_moves(turn_step, white_options, black_options, selection):
     if (turn_step < 2):
         options_list = white_options
@@ -10,6 +11,7 @@ def check_valid_moves(turn_step, white_options, black_options, selection):
 
     return valid_options
 
+#pawn moves
 def check_pawn(position, color, white_locations, black_locations, en_passant_target):
     moves_list = []
     if color == 'white':
@@ -45,6 +47,7 @@ def check_pawn(position, color, white_locations, black_locations, en_passant_tar
 
     return moves_list
 
+#rook moves
 def check_rook(position, color, white_locations, black_locations):
     moves_list = []
 
@@ -82,6 +85,7 @@ def check_rook(position, color, white_locations, black_locations):
 
     return moves_list
 
+#bishop moves
 def check_bishop(position, color, white_locations, black_locations):
     moves_list = []
 
@@ -119,6 +123,7 @@ def check_bishop(position, color, white_locations, black_locations):
     
     return moves_list
 
+#knight moves
 def check_knight(position, color, white_locations, black_locations):
     moves_list = []
 
@@ -136,6 +141,7 @@ def check_knight(position, color, white_locations, black_locations):
 
     return moves_list
 
+#queen moves
 def check_queen(position, color, white_locations, black_locations):
     straight_move_list = check_rook(position, color, white_locations, black_locations)
     diagonal_move_list = check_bishop(position, color, white_locations, black_locations)
@@ -145,6 +151,7 @@ def check_queen(position, color, white_locations, black_locations):
 
     return straight_move_list
 
+#king moves
 def check_king(position, color, white_pieces, black_pieces, white_locations, black_locations, white_moved, black_moved, white_options, black_options):
     moves_list = []
 
@@ -174,11 +181,8 @@ def check_king(position, color, white_pieces, black_pieces, white_locations, bla
 
     return moves_list, castle_moves
 
+#castling
 def check_castling(pieces, moved, locations, opposing_locations, opposing_options):
-    # condition 1: king cannot be in check
-    # condition 2: neither rook nor king have moved
-    # condition 3: no pieces between king and rook
-    # condition 4: no pieces between and including the king and the post the king will land on are being attacked
     valid_moves = [] # stored as [(king_coords, rook_coords)]
     rook_indexes = []
     rook_locations = []
@@ -187,35 +191,38 @@ def check_castling(pieces, moved, locations, opposing_locations, opposing_option
 
     allow_castle = False
 
+    # ensure the rook has not moved and get location of the rooks
     for i in range(len(pieces)):
         if pieces[i] == 'rook':
-            rook_indexes.append(moved[i]) # ensure the rook has not moved
-            rook_locations.append(locations[i]) # get locations of the rooks
+            rook_indexes.append(moved[i]) 
+            rook_locations.append(locations[i])
         if pieces[i] == 'king':
             king_index = i
             king_pos = locations[i]
     
-    attacked_squares = [sq for sublist in opposing_options for sq in sublist]
+    attacked_squares = [square for sublist in opposing_options for square in sublist]
     
-    if not moved[king_index] and False in rook_indexes and king_pos not in attacked_squares: # change false to in check  
+    #checks disable castling
+    if not moved[king_index] and False in rook_indexes and king_pos not in attacked_squares:
         for i in range(len(rook_indexes)):
             allow_castle = True
             if rook_indexes[i]:
                 continue
-
-            if rook_locations[i][0] > king_pos[0]: # rook to the right of the king - long castle
+            
+            #long castle and short castling
+            if rook_locations[i][0] > king_pos[0]: 
                 empty_squares = [(king_pos[0] + 1, king_pos[1]), (king_pos[0] + 2, king_pos[1]), (king_pos[0] + 3, king_pos[1])]
                 king_path = [king_pos, (king_pos[0] + 1, king_pos[1]), (king_pos[0] + 2, king_pos[1])]
-            else: # rook to the left of the king - short castle
+            else:
                 empty_squares = [(king_pos[0] - 1, king_pos[1]), (king_pos[0] - 2, king_pos[1])]
                 king_path = [king_pos, (king_pos[0] - 1, king_pos[1]), (king_pos[0] - 2, king_pos[1])]
 
-            for sq in empty_squares:
-                if sq in locations or sq in opposing_locations:
+            for square in empty_squares:
+                if square in locations or square in opposing_locations:
                     allow_castle = False
             
-            for sq in king_path:
-                if sq in attacked_squares:
+            for square in king_path:
+                if square in attacked_squares:
                     allow_castle = False
 
             if allow_castle:
@@ -224,6 +231,7 @@ def check_castling(pieces, moved, locations, opposing_locations, opposing_option
     return valid_moves
     
 
+#valid promotion checker
 def check_promotion(white_pieces, black_pieces, white_locations, black_locations):
     pawn_indexes = []
     white_promotion = False
@@ -252,6 +260,7 @@ def check_promotion(white_pieces, black_pieces, white_locations, black_locations
 
     return white_promotion, black_promotion, promote_index
 
+#pick promotion piece
 def check_promotion_select(white_promote, black_promote, promo_index, white_pieces, black_pieces, white_promotions, black_promotions):
     mouse_pos = pygame.mouse.get_pos()
     left_click = pygame.mouse.get_pressed()[0]
