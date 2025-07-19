@@ -187,59 +187,6 @@ def check_castling(pieces, moved, locations, opposing_locations, opposing_option
 
     allow_castle = False
 
-    # white move
-    # if turn_step > 1:
-    #     for i in range(len(white_pieces)):
-    #         if white_pieces[i] == 'rook':
-    #             rook_indexes.append(white_moved[i]) # ensure the rook has not moved
-    #             rook_locations.append(white_locations[i]) # get locations of the rooks
-    #         if white_pieces[i] == 'king':
-    #             king_index = i
-    #             king_pos = white_locations[i]
-        
-    #     if not white_moved[king_index] and False in rook_indexes and not False: # change false to in check
-            
-    #         for i in range(len(rook_indexes)):
-    #             allow_castle = True
-    #             if rook_locations[i][0] > king_pos: # rook to the right of the king - long castle
-    #                 empty_squares = [(king_pos[0] + 1, king_pos[1]), (king_pos[0] + 2, king_pos[1]), (king_pos[0] + 3, king_pos[1])]
-    #             else: # rook to the left of the king - short castle
-    #                 empty_squares = [(king_pos[0] - 1, king_pos[1]), (king_pos[0] - 2, king_pos[1])]
-
-    #             for j in range(len(empty_squares)):
-    #                 if empty_squares[j] in white_locations or empty_squares[j] in black_locations or empty_squares[j] in black_options or rook_indexes[i]: # conditions 3 + 4
-    #                     allow_castle = False
-
-    #             if allow_castle:
-    #                 valid_moves.append((empty_squares[1], empty_squares[0]))
-    # else:
-    #     for i in range(len(black_pieces)):
-    #         if black_pieces[i] == 'rook':
-    #             rook_indexes.append(black_moved[i]) # ensure the rook has not moved
-    #             rook_locations.append(black_locations[i]) # get locations of the rooks
-    #         if black_pieces[i] == 'king':
-    #             king_index = i
-    #             king_pos = black_locations[i]
-        
-    #     if not black_moved[king_index] and False in rook_indexes and not in_check:
-            
-    #         for i in range(len(rook_indexes)):
-    #             allow_castle = True
-    #             if rook_locations[i][0] > king_pos: # rook to the right of the king - long castle
-    #                 empty_squares = [(king_pos[0] + 1, king_pos[1]), (king_pos[0] + 2, king_pos[1]), (king_pos[0] + 3, king_pos[1])]
-    #             else: # rook to the left of the king - short castle
-    #                 empty_squares = [(king_pos[0] - 1, king_pos[1]), (king_pos[0] - 2, king_pos[1])]
-
-    #             for j in range(len(empty_squares)):
-    #                 if empty_squares[j] in black_locations or empty_squares[j] in black_locations or empty_squares[j] in white_options or rook_indexes[i]: # conditions 3 + 4
-    #                     allow_castle = False
-
-    #             if allow_castle:
-    #                 valid_moves.append((empty_squares[1], empty_squares[0]))
-
-
-    ################
-
     for i in range(len(pieces)):
         if pieces[i] == 'rook':
             rook_indexes.append(moved[i]) # ensure the rook has not moved
@@ -248,17 +195,27 @@ def check_castling(pieces, moved, locations, opposing_locations, opposing_option
             king_index = i
             king_pos = locations[i]
     
-    if not moved[king_index] and False in rook_indexes and not False: # change false to in check
-        
+    attacked_squares = [sq for sublist in opposing_options for sq in sublist]
+    
+    if not moved[king_index] and False in rook_indexes and king_pos not in attacked_squares: # change false to in check  
         for i in range(len(rook_indexes)):
             allow_castle = True
+            if rook_indexes[i]:
+                continue
+
             if rook_locations[i][0] > king_pos[0]: # rook to the right of the king - long castle
                 empty_squares = [(king_pos[0] + 1, king_pos[1]), (king_pos[0] + 2, king_pos[1]), (king_pos[0] + 3, king_pos[1])]
+                king_path = [king_pos, (king_pos[0] + 1, king_pos[1]), (king_pos[0] + 2, king_pos[1])]
             else: # rook to the left of the king - short castle
                 empty_squares = [(king_pos[0] - 1, king_pos[1]), (king_pos[0] - 2, king_pos[1])]
+                king_path = [king_pos, (king_pos[0] - 1, king_pos[1]), (king_pos[0] - 2, king_pos[1])]
 
-            for j in range(len(empty_squares)):
-                if empty_squares[j] in locations or empty_squares[j] in opposing_locations or empty_squares[j] in opposing_options or rook_indexes[i]: # conditions 3 + 4
+            for sq in empty_squares:
+                if sq in locations or sq in opposing_locations:
+                    allow_castle = False
+            
+            for sq in king_path:
+                if sq in attacked_squares:
                     allow_castle = False
 
             if allow_castle:

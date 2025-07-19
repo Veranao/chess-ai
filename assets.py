@@ -67,21 +67,15 @@ def check_castling():
 
 
 def draw_castling(turn_step, white_castle_moves, black_castle_moves, screen, font):
-    if turn_step < 2: # white's turn
-        color = 'red'
+    if turn_step < 2:
         moves = white_castle_moves
     else:
-        color = 'blue'
         moves = black_castle_moves
 
     for i in range(len(moves)):
-        pygame.draw.circle(screen, color, (moves[i][0][0] * 100 + 50, moves[i][0][1] * 100 + 70), 8) # drawing king's move
+        pygame.draw.circle(screen, 'red', (moves[i][0][0] * 100 + 50, moves[i][0][1] * 100 + 50), 5) 
         screen.blit(font.render('king', True, 'black'), (moves[i][0][0] * 100 + 30, moves[i][0][1] * 100 + 70))
-
-        pygame.draw.circle(screen, color, (moves[i][1][0] * 100 + 50, moves[i][1][1] * 100 + 70), 8) # drawing rooks's move
         screen.blit(font.render('rook', True, 'black'), (moves[i][1][0] * 100 + 30, moves[i][1][1] * 100 + 70))
-
-        pygame.draw.line(screen, color, (moves[i][0][0] * 100 + 50, moves[i][0][1] * 100 + 70), (moves[i][1][0] * 100 + 50, moves[i][1][1] * 100 + 70), 2)
 
 def draw_captured(captured_white_pieces, captured_black_pieces, small_white_images, small_black_images, piece_list, screen):
     
