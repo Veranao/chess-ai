@@ -341,7 +341,6 @@ def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, 
     else:
         best_score = float('inf')
     best_move = None
-
     assert best_score == float('-inf') if maximizing_player else float('inf'), "best_score initialized incorrectly"
 
     for i in range(len(pieces)):
@@ -380,13 +379,6 @@ def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, 
 
             next_options, _ = check_options(next_white_pieces if next_turn == 'white' else next_black_pieces, next_white_locations if next_turn == 'white' else next_black_locations, next_turn)
             score, _ = minimax_ai_algorithm(next_white_pieces if next_turn == 'white' else next_black_pieces, next_white_locations if next_turn == 'white' else next_black_locations, next_turn, next_options, depth - 1, next_white_pieces, next_black_pieces, next_white_locations, next_black_locations, ai_is_white, not maximizing_player, alpha=alpha, beta=beta)
-            
-
-            print()
-            print("Before")
-            print("score: ", score)
-            print("best score: ", best_score)
-            print(f"\nBefore comparing: score = {score}, best_score = {best_score}, maximizing = {maximizing_player}")
 
 
             if maximizing_player:
@@ -406,10 +398,6 @@ def minimax_ai_algorithm(pieces, locations, turn, options, depth, white_pieces, 
                 if beta <= alpha:
                     return best_score, best_move
 
-            print()
-            print("AFTER")
-            print("score: ", score)
-            print("best score: ", best_score)
             print(f"After comparing: best_score = {best_score}, best_move = {best_move}")
         
         if depth == 2:
@@ -430,8 +418,8 @@ def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is
                 if piece == 'pawn':
                     white_score += 0.3
                 elif piece == 'knight':
-                    white_score += 0.8
-                elif piece == 'bishop' and (location not in white_bishop_start):
+                    white_score += 0.3
+                elif piece == 'bishop':
                     white_score += 0.5
 
             if piece == 'king':
@@ -470,6 +458,9 @@ def evaluate_minimax(pieces, locations, opponent_pieces, opponent_options, ai_is
                     trade_balance = target_value - attacker_value
                     white_score += trade_balance * 0.5
 
+        # rewards positiosn where the opponent has less options by either taking control of spaces away or outright encouraging captures (lowers options obviously)
+        white_score -= len([move for moves in opponent_options for move in moves]) * 0.22
+ 
         for piece in pieces:
             white_score += piece_values[piece]
         
@@ -564,7 +555,7 @@ while player_select:
         box_x = (WIDTH - box_width) // 2
         box_y = (HEIGHT - box_height) // 2
         pygame.draw.rect(screen, (50, 200, 50), [box_x, box_y, box_width, box_height])
-        text = 'Press 1 to play against a human,\n2 to play against a beginner AI,\nor any other key to play against AI!'
+        text = 'Press 1 to play against a human,\n2 to play against a greedy algo AI,\nor any other key to play against a minimax algo AI!'
 
         x_position = 245 + (600 - box_width) // 2
         y_position = 440 + (150 - box_height) // 2
@@ -572,7 +563,7 @@ while player_select:
         text_lines = text.split('\n')
 
         for i, line in enumerate(text_lines):
-            screen.blit(font.render(line, True, 'black'), (x_position + 115, y_position + i * 17)) 
+            screen.blit(font.render(line, True, 'black'), (x_position + 90, y_position + i * 17)) 
 
         pygame.display.flip()
 
@@ -770,19 +761,21 @@ while run:
                             turn_moved = True
 
 
+            #if the game is not over then check for promotions
             if not game_over:
                 white_promote, black_promote, promo_index = check_promotion(white_pieces, black_pieces, white_locations, black_locations)
                 if white_promote or black_promote:
                     draw_promotion(screen, white_promote, black_promote, white_promotions, black_promotions, piece_list, white_images, black_images)
                     check_promotion_select(white_promote, black_promote, promo_index, white_pieces, black_pieces, white_promotions, black_promotions)
-                    
+            
+            # draws check and also returns if in check
             if turn_moved:
                 black_options, black_castle_options = check_options(black_pieces, black_locations, 'black')
                 white_options, white_castle_options = check_options(white_pieces, white_locations, 'white')
                 turn_step = 0
                 selection = 100
                 valid_moves = []
-                in_check = draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter) # draws check and also returns if in check
+                in_check = draw_check(turn_step, white_pieces, black_pieces, white_locations, black_locations, white_options, black_options, screen, counter)
 
 
             if turn_step == 0:
@@ -812,14 +805,20 @@ while run:
             #2) pick a piece to move form the valid list
             if possible_moves:
                 if play_with_minimax: 
+                    start_time = time.time()
                     _, best_move = minimax_ai_algorithm(white_pieces, white_locations, 'white', white_options, 2, white_pieces, black_pieces, white_locations, black_locations, True, maximizing_player=True)
+                    end_time = time.time()
+                    print(f"Minimax AI move time:  {round(end_time - start_time, 4)} seconds")
                     if best_move is None or best_move[0] is None or best_move[1] is None:
                         ai_waiting = False
                         continue
                     selection, ai_move = best_move
                     selection = int(selection)
                 else:
+                    start_time = time.time()
                     selection, ai_move = chess_ai_greedy_algorithm(white_pieces, white_locations, 'white', white_options, white_pieces, black_pieces, white_locations, black_locations)
+                    end_time = time.time()
+                    print(f"Minimax AI move time:  {round(end_time - start_time, 4)} seconds")
                     selection = int(selection)
                 selected_piece = white_pieces[selection]
                 #3) Make the move
@@ -895,6 +894,7 @@ while run:
                     winner = 'White'
                     game_over = True
 
+    #surrender option
     if event.type == pygame.KEYDOWN and game_over: 
         # reset all parts
         if event.key == pygame.K_RETURN:
@@ -926,6 +926,7 @@ while run:
             ai_waiting = False
             ai_start_time = 0
 
+    #game over screen prompt
     if winner != '':
         game_over = True
         draw_game_over(screen, font, winner)
