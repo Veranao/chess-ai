@@ -4,6 +4,9 @@ A project for a third-year undergraduate AI course (COSC 3117) that features a h
 Requres:
 Python 3.X and the "pygame" library
 
+Check:
+Ensure all image files are present so that all game pieces can load appropriately into the game.
+
 Steps/Commands to Install:
 
 #Open the terminal of VS Code or your chosen Python-supported IDE and run:
