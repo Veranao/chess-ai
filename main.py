@@ -1,3 +1,5 @@
+#Github repo: https://github.com/Veranao/chess-ai
+
 import pygame
 from assets import *
 from checkvalidmoves import *
@@ -592,7 +594,7 @@ while player_select:
                     play_with_minimax = True
 
                 player_select = False
-                
+
 #game loop
 while run:
     timer.tick(frames_per_second)

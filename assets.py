@@ -1,3 +1,5 @@
+#Github repo: https://github.com/Veranao/chess-ai
+
 import pygame
 
 _CHESSPIECESPATH = "./images/chess-pieces-basic/"

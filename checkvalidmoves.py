@@ -1,3 +1,5 @@
+#Github repo: https://github.com/Veranao/chess-ai
+
 import pygame
 
 #turn checker to fetch options list for currently playing color
