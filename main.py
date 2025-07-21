@@ -3,7 +3,6 @@
 import pygame
 from assets import *
 from checkvalidmoves import *
-from chessengine import *
 import random
 import time
 import copy
